@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------
+# EPCVIEW
+# ---------------------------------------------------------------------------
+
+# Dependências --------------------------------------------------------------
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+
+# Dados da obra -------------------------------------------------------------
+# As planilhas moram no Cloudflare R2 (lib/r2.js), não no disco: local e
+# hospedado enxergam o mesmo balde, então nada se perde entre deploys/reinícios
+# nem entre "no meu PC" e "no Render". Não há mais pasta local para planilhas.
+# As credenciais do R2 ficam no .env (ver seção "Ambiente e segredos" abaixo).
+
+# Backups e material de apoio -----------------------------------------------
+# Arquivos preservados de versões anteriores e planilhas de exemplo.
+backup/
+
+# Sessões -------------------------------------------------------------------
+# Tokens de sessão são credenciais vivas: quem tem o token entra sem senha.
+# Nunca podem ir para o repositório.
+data/sessoes.json
+data/*.tmp
+
+# Contatos do site ------------------------------------------------------------
+# Nome, e-mail e telefone de quem preencheu o formulário público: dado pessoal,
+# não vai para o repositório.
+data/contatos.json
+
+# Dockers ----------------------------------------------------------------------
+# dockers.json guarda o "Token de acesso" de cada aplicação registrada — uma
+# credencial viva, igual às sessões. Os uploads são .tar de container (até
+# 2GB) e nunca deveriam sobreviver além do registro (apagados logo depois).
+data/dockers.json
+data/dockers-uploads/
+
+# Ambiente e segredos -------------------------------------------------------
+# Nunca versionar credenciais. Segredos nunca entram no repositório.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Sistema operacional -------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Editores ------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporários e logs --------------------------------------------------------
+*.log
+*.tmp
+*.bak
+*.old
+tmp/
+temp/
+.cache/
+
+# Saída de testes -----------------------------------------------------------
+perfil-edge*/
+*.png.tmp
+coverage/
+
+# ---------------------------------------------------------------------------
+# Propositalmente VERSIONADO:
+#   data/database.json  -> usuários e dashboards. Os painéis são o conteúdo do
+#                          sistema (código JS escrito pelos admins), e ter
+#                          histórico deles permite saber quem mudou o quê e
+#                          reverter. As sessões NÃO ficam aqui.
+# ---------------------------------------------------------------------------

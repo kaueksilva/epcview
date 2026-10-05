@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboards · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  .grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 1rem;
+  }
+
+  .painel-cartao {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .pc-corpo { padding: 1.15rem 1.15rem .9rem; flex: 1; display: block; text-decoration: none; color: inherit; }
+
+  .pc-icone {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: var(--azul-100);
+    color: var(--azul-700);
+    display: grid; place-items: center;
+    margin-bottom: .85rem;
+    transition: background var(--transicao), color var(--transicao);
+  }
+  .painel-cartao:hover .pc-icone { background: var(--azul-800); color: #fff; }
+
+  .pc-titulo {
+    margin: 0 0 .3rem;
+    font-size: .92rem; font-weight: 700;
+    letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pc-desc { margin: 0; font-size: .78rem; color: var(--texto-2); line-height: 1.5; min-height: 2.35rem; }
+
+  /* Fontes do dashboard: mostra de quais planilhas ele vive, sem abrir o código */
+  .pc-fontes { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .75rem; }
+  .pc-fonte {
+    font-size: .625rem; font-weight: 700;
+    padding: .12rem .4rem;
+    border-radius: 5px;
+    background: var(--superficie-2);
+    border: 1px solid var(--borda);
+    color: var(--texto-2);
+  }
+
+  .pc-meta {
+    display: flex; align-items: center; gap: .35rem;
+    margin: .8rem 0 0;
+    font-size: .6875rem; color: var(--texto-3);
+  }
+
+  .pc-acoes {
+    display: flex; gap: .4rem;
+    padding: .65rem .8rem;
+    background: var(--superficie-2);
+    border-top: 1px solid var(--borda);
+  }
+  .pc-acoes .btn { height: 2rem; font-size: .75rem; flex: 1; }
+  .pc-acoes .btn-perigo, .pc-acoes .btn-icone { flex: 0 0 2rem; padding: 0; }
+
+  .busca-caixa { position: relative; }
+  .busca-caixa svg {
+    position: absolute; left: .7rem; top: 50%;
+    transform: translateY(-50%);
+    color: var(--texto-3); pointer-events: none;
+  }
+  .busca-caixa .campo { padding-left: 2.2rem; width: 16rem; }
+
+  @media (max-width: 560px) {
+    .busca-caixa .campo { width: 100%; }
+    .topo > div:last-child { width: 100%; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+
+    <header class="topo">
+      <div>
+        <h1>Dashboards</h1>
+        <p id="contagem">Carregando...</p>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:.5rem">
+        <div class="busca-caixa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" style="width:15px;height:15px">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input class="campo" id="busca" type="search" placeholder="Buscar painel..." aria-label="Buscar dashboard">
+        </div>
+        <a href="index.html" class="btn btn-primario" id="btn-novo" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" style="width:15px;height:15px"><path d="M12 5v14M5 12h14"/></svg>
+          Novo painel
+        </a>
+      </div>
+    </header>
+
+    <div class="corpo">
+      <div id="grade" class="grade"></div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const grade = document.getElementById('grade');
+  const campoBusca = document.getElementById('busca');
+  let dashboards = [];
+  let usuario = null;
+
+  const ICONE_PAINEL =
+    '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 3.5-4 3 2.5L20 7"/>';
+
+  function cartao(d) {
+    const ehAdmin = usuario && usuario.papel === 'admin';
+
+    const artigo = document.createElement('article');
+    artigo.className = 'cartao cartao-hover painel-cartao surgir';
+
+    const corpo = document.createElement('a');
+    corpo.className = 'pc-corpo';
+    corpo.href = 'viewer.html?id=' + encodeURIComponent(d.id);
+
+    const icone = document.createElement('div');
+    icone.className = 'pc-icone';
+    icone.innerHTML = UHNUI.icone(ICONE_PAINEL, 19);
+
+    const titulo = document.createElement('h3');
+    titulo.className = 'pc-titulo';
+    titulo.textContent = d.titulo;          // textContent: o título vem do usuário
+    titulo.title = d.titulo;
+
+    const desc = document.createElement('p');
+    desc.className = 'pc-desc duas-linhas';
+    desc.textContent = d.descricao || 'Sem descrição.';
+
+    corpo.append(icone, titulo, desc);
+
+    if (d.fontes && d.fontes.length) {
+      const fontes = document.createElement('div');
+      fontes.className = 'pc-fontes';
+      d.fontes.slice(0, 6).forEach(f => {
+        const tag = document.createElement('span');
+        tag.className = 'pc-fonte';
+        tag.textContent = f;
+        fontes.appendChild(tag);
+      });
+      if (d.fontes.length > 6) {
+        const resto = document.createElement('span');
+        resto.className = 'pc-fonte';
+        resto.textContent = '+' + (d.fontes.length - 6);
+        fontes.appendChild(resto);
+      }
+      corpo.appendChild(fontes);
+    }
+
+    const meta = document.createElement('p');
+    meta.className = 'pc-meta';
+    meta.innerHTML = UHNUI.icone('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 12);
+    meta.appendChild(document.createTextNode('Atualizado ' + UHNUI.dataRelativa(d.atualizadoEm)));
+    corpo.appendChild(meta);
+
+    const acoes = document.createElement('div');
+    acoes.className = 'pc-acoes';
+
+    const abrir = document.createElement('a');
+    abrir.className = 'btn btn-contorno';
+    abrir.href = 'viewer.html?id=' + encodeURIComponent(d.id);
+    abrir.textContent = 'Abrir';
+    acoes.appendChild(abrir);
+
+    // Editar e excluir só aparecem para quem pode de fato fazê-los.
+    if (ehAdmin) {
+      const editar = document.createElement('a');
+      editar.className = 'btn btn-primario';
+      editar.href = 'index.html?edit=' + encodeURIComponent(d.id);
+      editar.textContent = 'Editar';
+
+      const duplicar = document.createElement('button');
+      duplicar.className = 'btn btn-contorno btn-icone';
+      duplicar.title = 'Duplicar painel';
+      duplicar.setAttribute('aria-label', 'Duplicar ' + d.titulo);
+      duplicar.innerHTML = UHNUI.icone('<rect x="9" y="9" width="12" height="12" rx="2"/>' +
+        '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>', 14);
+      duplicar.addEventListener('click', () => duplicarPainel(d));
+
+      const excluir = document.createElement('button');
+      excluir.className = 'btn btn-perigo';
+      excluir.title = 'Excluir painel';
+      excluir.setAttribute('aria-label', 'Excluir ' + d.titulo);
+      excluir.innerHTML = UHNUI.icone('<path d="M4 7h16M10 11v6M14 11v6"/>' +
+        '<path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>', 14);
+      excluir.addEventListener('click', () => remover(d));
+
+      acoes.append(editar, duplicar, excluir);
+    }
+
+    artigo.append(corpo, acoes);
+    return artigo;
+  }
+
+  function vazio(titulo, texto) {
+    const div = document.createElement('div');
+    div.className = 'vazio';
+    div.style.gridColumn = '1 / -1';
+    div.innerHTML =
+      '<div class="vazio-icone">' + UHNUI.icone(ICONE_PAINEL, 24) + '</div>' +
+      '<h3></h3><p></p>';
+    div.querySelector('h3').textContent = titulo;
+    div.querySelector('p').textContent = texto;
+    return div;
+  }
+
+  function renderizar() {
+    const termo = campoBusca.value.trim().toLowerCase();
+    const visiveis = termo
+      ? dashboards.filter(d =>
+          d.titulo.toLowerCase().includes(termo) ||
+          (d.descricao || '').toLowerCase().includes(termo) ||
+          (d.fontes || []).some(f => f.toLowerCase().includes(termo)))
+      : dashboards;
+
+    document.getElementById('contagem').textContent =
+      !dashboards.length ? 'Nenhum painel publicado'
+      : termo ? visiveis.length + ' de ' + dashboards.length + ' painéis'
+      : dashboards.length + (dashboards.length === 1 ? ' painel publicado' : ' painéis publicados');
+
+    grade.innerHTML = '';
+    if (!visiveis.length) {
+      grade.appendChild(dashboards.length
+        ? vazio('Nada encontrado', 'Nenhum painel corresponde a "' + campoBusca.value.trim() + '".')
+        : vazio('Nenhum painel ainda',
+                usuario && usuario.papel === 'admin'
+                  ? 'Clique em "Novo painel" para criar o primeiro.'
+                  : 'Assim que um administrador publicar um painel, ele aparece aqui.'));
+      return;
+    }
+    visiveis.forEach(d => grade.appendChild(cartao(d)));
+  }
+
+  async function remover(d) {
+    const ok = await UHNUI.confirmar({
+      titulo: 'Excluir painel',
+      texto: '"' + d.titulo + '" será removido para todos os usuários.\nEsta ação não pode ser desfeita.',
+      confirmar: 'Excluir',
+      perigo: true
+    });
+    if (!ok) return;
+
+    const resp = await fetch('/api/dashboards/' + encodeURIComponent(d.id), {
+      method: 'DELETE', credentials: 'same-origin'
+    });
+    if (resp.ok) {
+      dashboards = dashboards.filter(x => x.id !== d.id);
+      renderizar();
+      UHNUI.aviso('Painel excluído.', 'sucesso');
+    } else {
+      const erro = await resp.json().catch(() => ({}));
+      UHNUI.aviso(erro.error || 'Não foi possível excluir.', 'erro');
+    }
+  }
+
+  /** Cria uma cópia e já leva para o editor — renomear ali é mais natural que aqui. */
+  async function duplicarPainel(d) {
+    try {
+      const resp = await fetch('/api/dashboards/' + encodeURIComponent(d.id) + '/duplicar', {
+        method: 'POST', credentials: 'same-origin'
+      });
+      const dados = await resp.json();
+      if (!resp.ok) throw new Error(dados.error || 'Não foi possível duplicar.');
+
+      UHNUI.aviso('Painel duplicado. Abrindo para edição...', 'sucesso');
+      location.href = 'index.html?edit=' + encodeURIComponent(dados.id);
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    }
+  }
+
+  function esqueletos() {
+    grade.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const s = document.createElement('div');
+      s.className = 'cartao';
+      s.style.height = '188px';
+      s.innerHTML = '<div class="esqueleto" style="height:100%;border-radius:var(--raio-g)"></div>';
+      grade.appendChild(s);
+    }
+  }
+
+  async function iniciar() {
+    usuario = await UHNUI.montarBarraLateral('galeria');
+    if (!usuario) return;
+
+    const paginasPermitidas = (usuario.permissoes && usuario.permissoes.paginas) || 'todos';
+    if (usuario.papel !== 'admin' && paginasPermitidas !== 'todos' && !paginasPermitidas.includes('galeria')) {
+      document.querySelector('.conteudo').innerHTML =
+        '<div class="vazio" style="height:100%">' +
+          '<div class="vazio-icone">' + UHNUI.icone('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>', 24) + '</div>' +
+          '<h3>Acesso restrito</h3><p>Seu grupo não tem acesso aos painéis.</p></div>';
+      return;
+    }
+
+    if (usuario.papel === 'admin') document.getElementById('btn-novo').hidden = false;
+
+    esqueletos();
+    try {
+      const resp = await fetch('/api/dashboards', { credentials: 'same-origin' });
+      dashboards = await resp.json();
+      renderizar();
+    } catch {
+      grade.innerHTML = '';
+      grade.appendChild(vazio('Erro ao carregar', 'Verifique se o servidor está no ar.'));
+    }
+  }
+
+  campoBusca.addEventListener('input', renderizar);
+  iniciar();
+})();
+</script>
+</body>
+</html>

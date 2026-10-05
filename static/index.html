@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* Cabeçalho do editor -------------------------------------------------- */
+  .ed-topo { align-items: center; padding: .7rem 1rem; }
+
+  .ed-identidade { display: flex; align-items: center; gap: .6rem; flex: 1; min-width: 0; max-width: 30rem; }
+  .ed-identidade > div:nth-child(2) { flex: 1; min-width: 0; }
+
+  #titulo, #descricao {
+    width: 100%; border: 1px solid transparent; background: transparent;
+    border-radius: 7px; padding: .22rem .45rem;
+    transition: background var(--transicao), border-color var(--transicao);
+  }
+  #titulo { font-size: .95rem; font-weight: 700; color: var(--texto); letter-spacing: -.01em; }
+  #descricao { font-size: .75rem; color: var(--texto-2); margin-top: .1rem; }
+  #titulo::placeholder { color: var(--texto-3); font-weight: 500; }
+  #descricao::placeholder { color: var(--texto-3); }
+  #titulo:hover, #descricao:hover { background: var(--superficie-2); }
+  #titulo:focus, #descricao:focus { outline: none; background: var(--superficie); border-color: var(--azul-500); }
+
+  .marca-nao-salvo {
+    display: none; align-items: center; gap: .3rem;
+    font-size: .68rem; font-weight: 600; color: var(--alerta); white-space: nowrap;
+  }
+  .marca-nao-salvo.visivel { display: inline-flex; }
+  .marca-nao-salvo i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Barra de fontes ------------------------------------------------------ */
+  .fontes-barra {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem 1rem;
+    background: var(--superficie-2);
+    border-bottom: 1px solid var(--borda);
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  .fontes-rotulo {
+    font-size: .625rem; font-weight: 800; letter-spacing: .09em;
+    color: var(--texto-3); text-transform: uppercase; white-space: nowrap;
+  }
+  .fontes-lista { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; flex: 1; min-width: 0; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: .3rem;
+    height: 1.65rem; padding: 0 .25rem 0 .55rem;
+    font-size: .72rem; font-weight: 600;
+    background: var(--superficie); color: var(--azul-700);
+    border: 1px solid var(--azul-300); border-radius: 7px;
+    cursor: pointer;
+    transition: background var(--transicao);
+  }
+  .chip:hover { background: var(--azul-100); }
+  .chip-remover {
+    border: none; background: none; cursor: pointer; padding: .1rem;
+    color: var(--texto-3); display: grid; place-items: center; border-radius: 4px;
+  }
+  .chip-remover:hover { color: var(--erro); background: #fdeef0; }
+  .chip-vazio { font-size: .75rem; color: var(--texto-3); font-style: italic; }
+
+  /* Área de trabalho ----------------------------------------------------- */
+  .area { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+  .coluna { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--superficie); }
+
+  .coluna-cabecalho {
+    display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+    padding: .4rem .75rem;
+    background: var(--superficie-2);
+    border-bottom: 1px solid var(--borda);
+    flex-shrink: 0;
+  }
+  .coluna-titulo {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .625rem; font-weight: 800; letter-spacing: .09em;
+    color: var(--texto-2); text-transform: uppercase;
+  }
+  .mini-btn {
+    border: none; background: none; cursor: pointer;
+    font-size: .7rem; font-weight: 600; color: var(--texto-2);
+    padding: .25rem .5rem; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: .3rem;
+    transition: background var(--transicao), color var(--transicao);
+  }
+  .mini-btn:hover, .mini-btn.ligado { background: var(--azul-100); color: var(--azul-800); }
+
+  .divisor {
+    width: 5px; flex-shrink: 0; cursor: col-resize;
+    background: var(--borda); position: relative;
+    transition: background var(--transicao);
+  }
+  .divisor:hover, .divisor.arrastando { background: var(--azul-300); }
+  .divisor::after { content: ''; position: absolute; inset: 0 -4px; }
+
+  /* Console -------------------------------------------------------------- */
+  #console { display: none; flex-direction: column; flex-shrink: 0; height: 158px; background: #10222c; }
+  #console.visivel { display: flex; }
+  .console-topo {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .3rem .75rem; border-bottom: 1px solid #1e3a48; flex-shrink: 0;
+  }
+  .console-topo span { font-size: .6rem; font-weight: 800; letter-spacing: .09em; color: #6b8b9c; text-transform: uppercase; }
+  .console-topo button { background: none; border: none; color: #5d7b8b; font-size: .65rem; cursor: pointer; padding: .2rem .4rem; border-radius: 4px; }
+  .console-topo button:hover { color: #a8c4d2; background: rgba(255,255,255,.06); }
+  #console-linhas {
+    flex: 1; overflow-y: auto; padding: .5rem .75rem;
+    font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    font-size: .7rem; line-height: 1.65;
+  }
+  .cl { display: flex; gap: .6rem; color: #b8cdd8; }
+  .cl-hora { color: #4f6f80; flex-shrink: 0; }
+  .cl-msg { white-space: pre-wrap; word-break: break-word; }
+  .cl-erro .cl-msg { color: #f2969e; }
+  .cl-aviso .cl-msg { color: #e6be7b; }
+  .cl-ok .cl-msg { color: #86ceab; }
+
+  /* Preview -------------------------------------------------------------- */
+  .preview-caixa { flex: 1; position: relative; min-height: 0; }
+  #preview { width: 100%; height: 100%; border: none; display: block; }
+  .preview-vazio {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--fundo); text-align: center; padding: 1.5rem;
+  }
+  kbd {
+    font-family: inherit; font-size: .68rem; font-weight: 600;
+    background: var(--superficie); border: 1px solid var(--borda-forte);
+    border-bottom-width: 2px; border-radius: 5px; padding: .1rem .35rem; color: var(--texto-2);
+  }
+
+  /* Gaveta --------------------------------------------------------------- */
+  .gaveta-fundo {
+    position: fixed; inset: 0; z-index: 90;
+    background: rgba(9, 33, 48, .42);
+    opacity: 0; pointer-events: none; transition: opacity var(--transicao);
+  }
+  .gaveta-fundo.aberta { opacity: 1; pointer-events: auto; }
+
+  .gaveta {
+    position: fixed; top: 0; right: 0; height: 100%;
+    width: 100%; max-width: 56rem;
+    background: var(--superficie);
+    box-shadow: var(--sombra-3);
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 280ms cubic-bezier(.4, 0, .2, 1);
+    display: flex; flex-direction: column;
+  }
+  .gaveta.aberta { transform: none; }
+
+  .gaveta-topo {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: .9rem 1.1rem; border-bottom: 1px solid var(--borda); flex-shrink: 0;
+  }
+  .gaveta-topo h2 { margin: 0; font-size: .95rem; font-weight: 700; }
+  .gaveta-topo p { margin: .1rem 0 0; font-size: .72rem; color: var(--texto-2); }
+  .gaveta-topo code {
+    font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+    background: var(--azul-100); color: var(--azul-700); padding: .05rem .3rem; border-radius: 4px;
+  }
+  .gaveta-corpo { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+  .gaveta-lista { width: 20rem; flex-shrink: 0; border-right: 1px solid var(--borda); display: flex; flex-direction: column; }
+  .gaveta-busca { padding: .6rem .7rem; border-bottom: 1px solid var(--borda); }
+  .gaveta-itens { flex: 1; overflow-y: auto; padding: .4rem; }
+
+  .fonte-item {
+    display: flex; align-items: center; gap: .55rem;
+    width: 100%; text-align: left;
+    padding: .5rem .55rem;
+    border: 1px solid transparent; border-radius: 8px;
+    background: none; cursor: pointer;
+    transition: background var(--transicao), border-color var(--transicao);
+  }
+  .fonte-item:hover { background: var(--superficie-2); }
+  .fonte-item.selecionada { background: var(--azul-100); border-color: var(--azul-300); }
+  .fonte-item.ativa { box-shadow: inset 2px 0 0 var(--azul-600); }
+
+  .fonte-check {
+    width: 17px; height: 17px; flex-shrink: 0;
+    border: 1.5px solid var(--borda-forte); border-radius: 5px;
+    display: grid; place-items: center;
+    background: var(--superficie); color: transparent;
+    transition: background var(--transicao), border-color var(--transicao), color var(--transicao);
+  }
+  .fonte-item.selecionada .fonte-check { background: var(--azul-600); border-color: var(--azul-600); color: #fff; }
+
+  .fonte-texto { min-width: 0; flex: 1; }
+  .fonte-apelido { font-size: .74rem; font-weight: 700; color: var(--texto); }
+  .fonte-nome { font-size: .65rem; color: var(--texto-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .gaveta-detalhe { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .detalhe-topo { padding: .7rem 1rem; border-bottom: 1px solid var(--borda); flex-shrink: 0; }
+  .detalhe-topo h3 { margin: 0; font-size: .85rem; font-weight: 700; }
+  .detalhe-topo p { margin: .15rem 0 0; font-size: .7rem; color: var(--texto-2); }
+  .detalhe-tabela { flex: 1; overflow: auto; }
+
+  table.dados { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .7rem; }
+  table.dados th {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--azul-800); color: #fff;
+    font-weight: 600; text-align: left;
+    padding: .45rem .55rem; white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace; font-size: .66rem;
+  }
+  table.dados td {
+    padding: .4rem .55rem;
+    border-bottom: 1px solid var(--borda);
+    color: var(--texto-2);
+    max-width: 15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  table.dados tbody tr:nth-child(even) { background: var(--superficie-2); }
+
+  /* Modelos -------------------------------------------------------------- */
+  .modelo-item {
+    display: flex; align-items: flex-start; gap: .75rem;
+    width: 100%; text-align: left;
+    padding: .75rem;
+    border: 1px solid var(--borda); border-radius: var(--raio);
+    background: var(--superficie); cursor: pointer;
+    transition: border-color var(--transicao), background var(--transicao);
+  }
+  .modelo-item:hover { border-color: var(--azul-300); background: var(--azul-100); }
+  .modelo-icone {
+    width: 34px; height: 34px; flex-shrink: 0;
+    border-radius: 9px; background: var(--azul-100); color: var(--azul-700);
+    display: grid; place-items: center;
+  }
+  .modelo-item:hover .modelo-icone { background: var(--superficie); }
+
+  @media (max-width: 900px) {
+    .area { flex-direction: column; }
+    .divisor { display: none; }
+    #painel-codigo { width: 100% !important; height: 55%; }
+    .gaveta-lista { width: 13rem; }
+    .rotulo-largo { display: none; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+
+    <header class="topo ed-topo">
+      <div class="ed-identidade">
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--azul-100);color:var(--azul-700);display:grid;place-items:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+               stroke-linejoin="round" style="width:17px;height:17px">
+            <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/>
+          </svg>
+        </div>
+        <div>
+          <input id="titulo" type="text" placeholder="Nome do painel" aria-label="Nome do painel">
+          <input id="descricao" type="text" placeholder="Descrição curta (opcional)" aria-label="Descrição">
+        </div>
+        <span id="marca-rascunho" class="marca-nao-salvo"><i></i> não salvo</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:.4rem">
+        <button class="btn btn-suave" id="btn-modelos" title="Começar de um modelo pronto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="m12 3 1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3Z"/>
+          </svg>
+          <span class="rotulo-largo">Modelos</span>
+        </button>
+
+        <div style="width:1px;height:1.4rem;background:var(--borda)"></div>
+
+        <button class="btn btn-acao" id="btn-executar" title="Executar (Ctrl+Enter)">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M6 4l14 8-14 8z"/></svg>
+          Executar
+        </button>
+
+        <button class="btn btn-primario" id="btn-salvar" title="Publicar (Ctrl+S)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/>
+            <path d="M17 21v-8H7v8M7 3v5h8"/>
+          </svg>
+          Publicar
+        </button>
+
+        <button class="btn btn-suave" id="btn-historico" title="Ver versões anteriores" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 5v4h4"/><path d="M12 7v5l3 3"/>
+          </svg>
+        </button>
+
+        <a class="btn btn-suave" id="btn-abrir" href="#" target="_blank" title="Abrir a versão publicada" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/>
+          </svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- Fontes de dados: detectadas sozinhas a partir do código (dados.X / consultar()) -->
+    <div class="fontes-barra">
+      <span class="fontes-rotulo">Planilhas detectadas</span>
+      <div class="fontes-lista" id="fontes-lista"></div>
+      <button class="btn btn-contorno" id="btn-escolher-fontes" style="height:1.85rem;font-size:.72rem"
+              title="Ver planilhas disponíveis e suas colunas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:13px;height:13px">
+          <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>
+        </svg>
+        Ver planilhas
+      </button>
+    </div>
+
+    <div class="area" id="area">
+
+      <section class="coluna" id="painel-codigo" style="width:50%">
+        <div class="coluna-cabecalho">
+          <span class="coluna-titulo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round" style="width:13px;height:13px"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4"/></svg>
+            Código
+          </span>
+          <button class="mini-btn" id="btn-console">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round" style="width:13px;height:13px"><path d="m5 8 4 4-4 4M12 16h7"/></svg>
+            Console
+          </button>
+        </div>
+
+        <div id="editor" style="flex:1;min-height:0"></div>
+
+        <div id="console">
+          <div class="console-topo">
+            <span>Terminal</span>
+            <button id="btn-limpar-console">limpar</button>
+          </div>
+          <div id="console-linhas"></div>
+        </div>
+      </section>
+
+      <div class="divisor" id="divisor" role="separator" aria-label="Redimensionar painéis"></div>
+
+      <section class="coluna" style="flex:1">
+        <div class="coluna-cabecalho">
+          <span class="coluna-titulo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round" style="width:13px;height:13px">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="2.6"/>
+            </svg>
+            Pré-visualização
+          </span>
+          <span id="status-preview" style="font-size:.7rem;color:var(--texto-3)"></span>
+        </div>
+
+        <div class="preview-caixa">
+          <div class="preview-vazio" id="preview-vazio">
+            <div class="vazio-icone" style="margin-bottom:.8rem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                   stroke-linejoin="round" style="width:22px;height:22px">
+                <path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-4M12 16V8M17 16v-6"/>
+              </svg>
+            </div>
+            <h3 style="margin:0 0 .25rem;font-size:.88rem;font-weight:700">Nada executado ainda</h3>
+            <p style="margin:0;font-size:.78rem;color:var(--texto-2)">
+              Pressione <kbd>Ctrl</kbd> + <kbd>Enter</kbd> para rodar o painel
+            </p>
+          </div>
+          <iframe id="preview" src="sandbox.html" title="Pré-visualização"
+                  sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+
+<div class="gaveta-fundo" id="gaveta-fundo"></div>
+<aside class="gaveta" id="gaveta" aria-hidden="true">
+  <div class="gaveta-topo">
+    <div>
+      <h2>Planilhas do sistema</h2>
+      <p>Escreva <code>dados.P21</code> ou <code>consultar('P21')</code> no código — o painel detecta sozinho
+         e marca aqui o que está em uso.</p>
+    </div>
+    <div style="display:flex;gap:.6rem;align-items:center">
+      <span id="fontes-contagem" style="font-size:.72rem;color:var(--texto-2)"></span>
+      <button class="btn btn-primario" id="btn-fechar-gaveta">Fechar</button>
+    </div>
+  </div>
+
+  <div class="gaveta-corpo">
+    <div class="gaveta-lista">
+      <div class="gaveta-busca">
+        <input class="campo" id="busca-fontes" type="search" placeholder="Filtrar planilhas..." style="font-size:.78rem">
+      </div>
+      <div class="gaveta-itens" id="lista-fontes"></div>
+    </div>
+
+    <div class="gaveta-detalhe">
+      <div id="detalhe-vazio" class="vazio" style="flex:1">
+        <div class="vazio-icone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+               stroke-linejoin="round" style="width:22px;height:22px">
+            <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>
+          </svg>
+        </div>
+        <h3>Clique numa planilha</h3>
+        <p>Você vê as colunas já normalizadas — exatamente os nomes que vai usar no código.</p>
+      </div>
+
+      <div class="detalhe-topo" id="detalhe-topo" hidden>
+        <h3 id="detalhe-titulo"></h3>
+        <p id="detalhe-info"></p>
+      </div>
+      <div class="detalhe-tabela" id="detalhe-tabela" hidden>
+        <table class="dados"><thead id="detalhe-thead"></thead><tbody id="detalhe-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</aside>
+
+
+<div class="modal-fundo" id="modelos" style="display:none">
+  <div class="modal" style="max-width:30rem">
+    <h2 class="modal-titulo">Começar de um modelo</h2>
+    <p class="modal-texto" style="margin-bottom:.9rem">Os modelos já usam as planilhas que você escolheu.</p>
+    <div id="lista-modelos" style="display:flex;flex-direction:column;gap:.5rem;max-height:56vh;overflow-y:auto"></div>
+    <div class="modal-acoes" style="margin-top:1rem">
+      <button class="btn btn-contorno" id="btn-fechar-modelos">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo" id="historico" style="display:none">
+  <div class="modal" style="max-width:32rem">
+    <h2 class="modal-titulo">Versões anteriores</h2>
+    <p class="modal-texto" style="margin-bottom:.9rem">
+      Guardadas automaticamente a cada publicação. Restaurar não apaga nada —
+      o que está valendo agora também vira uma versão no histórico.
+    </p>
+    <div id="lista-historico" style="display:flex;flex-direction:column;gap:.5rem;max-height:56vh;overflow-y:auto"></div>
+    <div class="modal-acoes" style="margin-top:1rem">
+      <button class="btn btn-contorno" id="btn-fechar-historico">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs/loader.min.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/uhn-runtime.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

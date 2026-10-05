@@ -1,0 +1,14 @@
+{
+  "name": "epcview",
+  "version": "1.0.0",
+  "description": "EPCVIEW — site institucional e plataforma de painéis do ciclo EPC",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

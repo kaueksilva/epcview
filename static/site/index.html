@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPCVIEW · Engineering Intelligence</title>
+<meta name="description" content="EPCVIEW conecta pessoas, processos e dados ao longo de todo o ciclo EPC — planejamento, engenharia, suprimentos, construção e comissionamento — em um único ambiente.">
+<meta property="og:title" content="EPCVIEW · Engineering Intelligence">
+<meta property="og:description" content="Do dado à decisão. Do projeto à entrega. Uma visão integrada para empreendimentos complexos.">
+<meta name="theme-color" content="#0A1A33">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/site/site.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+
+<body class="site">
+
+<!-- Degradê do "V" da marca, reutilizado por todos os logos da página -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="epc-v-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A6CF0"/><stop offset="1" stop-color="#00C2FF"/>
+    </linearGradient>
+    <symbol id="v-marca" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></symbol>
+    <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ======================================================================
+     Cabeçalho
+     ====================================================================== -->
+<header class="cabecalho" id="cabecalho">
+  <div class="envoltorio">
+    <a href="#inicio" class="logo-epc logo-epc-claro" aria-label="EPCVIEW — início">
+      <span class="logo-epc-nome">EPC<svg class="logo-epc-v"><use href="#v-marca"/></svg>IEW</span>
+      <span class="logo-epc-sub">Engineering Intelligence</span>
+    </a>
+
+    <nav class="menu" id="menu" aria-label="Seções do site">
+      <a href="#solucoes">Soluções</a>
+      <a href="#plataforma">Plataforma</a>
+      <a href="#projetos">Projetos</a>
+      <a href="#sobre">Sobre</a>
+      <a href="#contato">Contato</a>
+      <a href="/login.html" class="menu-entrar" data-acesso>Acessar plataforma</a>
+    </nav>
+
+    <div class="cab-acoes">
+      <a href="/login.html" class="cab-entrar" data-acesso>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
+        <span data-acesso-rotulo>Entrar</span>
+      </a>
+      <a href="#contato" class="botao botao-escuro">Solicite uma demonstração <svg class="seta"><use href="#i-seta"/></svg></a>
+    </div>
+
+    <button class="menu-alternar" id="menu-alternar" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="inicio">
+
+<!-- ======================================================================
+     Hero
+     ====================================================================== -->
+<section class="hero">
+  <!-- Planta industrial vetorial: o fundo quando ainda não há site/img/hero.jpg -->
+  <svg class="hero-ilustracao" viewBox="0 0 980 520" aria-hidden="true">
+    <defs>
+      <linearGradient id="h-ceu" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#16325C" stop-opacity="0"/>
+        <stop offset="1" stop-color="#0A6CF0" stop-opacity=".35"/>
+      </linearGradient>
+      <linearGradient id="h-estrutura" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1E3F6E"/>
+        <stop offset="1" stop-color="#0B1C36"/>
+      </linearGradient>
+      <radialGradient id="h-luz">
+        <stop offset="0" stop-color="#FFD58A" stop-opacity="1"/>
+        <stop offset="1" stop-color="#FFD58A" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect x="0" y="260" width="980" height="260" fill="url(#h-ceu)"/>
+    <g fill="url(#h-estrutura)">
+      <!-- colunas de destilação -->
+      <rect x="250" y="120" width="34" height="400" rx="6"/>
+      <rect x="244" y="190" width="46" height="5"/><rect x="244" y="260" width="46" height="5"/><rect x="244" y="330" width="46" height="5"/>
+      <rect x="380" y="60" width="40" height="460" rx="7"/>
+      <rect x="373" y="140" width="54" height="5"/><rect x="373" y="220" width="54" height="5"/><rect x="373" y="300" width="54" height="5"/><rect x="373" y="380" width="54" height="5"/>
+      <rect x="470" y="150" width="30" height="370" rx="5"/>
+      <rect x="465" y="230" width="40" height="5"/><rect x="465" y="310" width="40" height="5"/>
+      <rect x="560" y="90" width="36" height="430" rx="6"/>
+      <rect x="554" y="170" width="48" height="5"/><rect x="554" y="250" width="48" height="5"/><rect x="554" y="330" width="48" height="5"/>
+      <!-- chaminés -->
+      <rect x="660" y="40" width="14" height="480"/>
+      <rect x="700" y="110" width="12" height="410"/>
+      <!-- estrutura de tubulação -->
+      <rect x="120" y="360" width="760" height="6"/>
+      <rect x="120" y="400" width="760" height="6"/>
+      <rect x="150" y="360" width="6" height="160"/><rect x="330" y="360" width="6" height="160"/><rect x="520" y="360" width="6" height="160"/><rect x="760" y="360" width="6" height="160"/>
+      <!-- esferas e tanques -->
+      <circle cx="820" cy="430" r="52"/>
+      <rect x="796" y="470" width="8" height="50"/><rect x="836" y="470" width="8" height="50"/>
+      <ellipse cx="80" cy="470" rx="70" ry="14"/><rect x="10" y="470" width="140" height="50"/>
+      <ellipse cx="930" cy="480" rx="60" ry="12"/><rect x="870" y="480" width="120" height="40"/>
+    </g>
+    <!-- luzes da planta -->
+    <g fill="url(#h-luz)">
+      <circle cx="267" cy="192" r="9"/><circle cx="267" cy="332" r="8"/><circle cx="400" cy="142" r="10"/>
+      <circle cx="400" cy="302" r="9"/><circle cx="485" cy="232" r="8"/><circle cx="578" cy="172" r="9"/>
+      <circle cx="578" cy="332" r="9"/><circle cx="667" cy="44" r="8"/><circle cx="706" cy="114" r="7"/>
+      <circle cx="200" cy="362" r="7"/><circle cx="440" cy="402" r="7"/><circle cx="640" cy="362" r="7"/>
+      <circle cx="820" cy="380" r="8"/><circle cx="80" cy="458" r="7"/>
+    </g>
+    <g fill="#FFE2A8">
+      <circle cx="267" cy="192" r="1.6"/><circle cx="267" cy="332" r="1.6"/><circle cx="400" cy="142" r="1.8"/>
+      <circle cx="400" cy="302" r="1.6"/><circle cx="485" cy="232" r="1.5"/><circle cx="578" cy="172" r="1.6"/>
+      <circle cx="578" cy="332" r="1.6"/><circle cx="667" cy="44" r="1.5"/><circle cx="706" cy="114" r="1.4"/>
+      <circle cx="200" cy="362" r="1.4"/><circle cx="440" cy="402" r="1.4"/><circle cx="640" cy="362" r="1.4"/>
+      <circle cx="820" cy="380" r="1.5"/><circle cx="80" cy="458" r="1.4"/>
+    </g>
+  </svg>
+  <div class="hero-foto" aria-hidden="true"></div>
+
+  <div class="envoltorio">
+    <div class="hero-conteudo surgir">
+      <p class="sobretitulo">Engineering Intelligence</p>
+      <h1><span>Do dado à decisão.</span><span>Do projeto à entrega.</span></h1>
+      <p class="hero-sub">Uma visão integrada para empreendimentos complexos.</p>
+      <div class="hero-acoes">
+        <a href="#plataforma" class="botao botao-primario">Conheça a plataforma <svg class="seta"><use href="#i-seta"/></svg></a>
+        <button type="button" class="hero-video" id="abrir-video">
+          <span class="botao-play"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z" fill="currentColor"/></svg></span>
+          Assista ao vídeo
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Pilares do ciclo EPC
+     ====================================================================== -->
+<section class="pilares" aria-label="Etapas do ciclo EPC">
+  <div class="envoltorio">
+    <div class="pilares-grade">
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="5" y="12" width="3" height="6"/><rect x="10.5" y="8" width="3" height="10"/><rect x="16" y="4" width="3" height="14"/></svg>
+        <strong>Planejamento</strong><span>Previsibilidade</span>
+      </a>
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 16.5h7M8.5 9.5h3"/></svg>
+        <strong>Engenharia</strong><span>Dados integrados</span>
+      </a>
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2.5 8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M12 21.5v-9.5M3.5 7.25 12 12l8.5-4.75"/></svg>
+        <strong>Suprimentos</strong><span>Rastreabilidade</span>
+      </a>
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18v2H3z"/><path d="M5 18v-3a7 7 0 0 1 14 0v3"/><path d="M10 8.3V5h4v3.3"/></svg>
+        <strong>Construção</strong><span>Acompanhamento</span>
+      </a>
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <strong>Comissionamento</strong><span>Visão completa</span>
+      </a>
+      <a class="pilar" href="#solucoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 6-7"/><path d="M16 6h4v4"/></svg>
+        <strong>Inteligência</strong><span>Decisões mais claras</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Plataforma
+     ====================================================================== -->
+<section class="plataforma" id="plataforma">
+  <div class="envoltorio">
+    <div class="plataforma-grade revelar">
+      <div class="plataforma-texto">
+        <p class="sobretitulo">Plataforma</p>
+        <h2 class="titulo-secao">Integração<br>que gera resultado.</h2>
+        <p>A EPCVIEW conecta pessoas, processos e dados ao longo de todo o ciclo EPC, em um único ambiente, com informações confiáveis e atualizadas em tempo real.</p>
+        <a href="#solucoes" class="botao botao-escuro">Conheça nossas soluções <svg class="seta"><use href="#i-seta"/></svg></a>
+      </div>
+
+      <div class="plataforma-visual">
+        <!-- Tela ilustrativa da plataforma (HTML, não imagem: nítida em qualquer tela) -->
+        <div class="notebook" aria-label="Tela ilustrativa do painel EPCVIEW" role="img">
+          <div class="notebook-tela">
+            <div class="app-mock">
+              <div class="am-lateral">
+                <span class="logo-epc"><span class="logo-epc-nome">EPC<svg class="logo-epc-v"><use href="#v-marca"/></svg>IEW</span></span>
+                <span class="am-item ativo"><i></i>Visão Geral</span>
+                <span class="am-item"><i></i>Planejamento</span>
+                <span class="am-item"><i></i>Suprimentos</span>
+                <span class="am-item"><i></i>Construção</span>
+                <span class="am-item"><i></i>Comissionamento</span>
+                <span class="am-item"><i></i>Qualidade</span>
+                <span class="am-item"><i></i>BIM 3D/4D</span>
+                <span class="am-item"><i></i>Documentos</span>
+                <span class="am-item"><i></i>Relatórios</span>
+              </div>
+              <div class="am-corpo">
+                <div class="am-topo"><strong>Projeto</strong><span class="am-filtro">Todos os projetos ▾</span></div>
+                <div class="am-kpis">
+                  <div class="am-kpi"><span>Avanço físico</span><b class="ciano">61,8%</b></div>
+                  <div class="am-kpi"><span>Previsto</span><b>68,4%</b></div>
+                  <div class="am-kpi"><span>Desvio</span><b class="vermelho">-6,6%</b></div>
+                  <div class="am-kpi"><span>Tendência final</span><b class="verde">96,2%</b></div>
+                </div>
+                <div class="am-graficos">
+                  <div class="am-cartao">
+                    <span>Curva física</span>
+                    <svg viewBox="0 0 200 90" preserveAspectRatio="none">
+                      <g stroke="rgba(255,255,255,.06)"><path d="M0 22h200M0 45h200M0 68h200"/></g>
+                      <path d="M0 86 C40 84 60 74 90 58 S150 22 200 10" fill="none" stroke="#6B7C93" stroke-width="1.6" stroke-dasharray="3 3"/>
+                      <path d="M0 86 C40 85 65 78 95 66 S135 44 150 38" fill="none" stroke="#00C2FF" stroke-width="2"/>
+                      <path d="M0 86 C40 85 65 78 95 66 S135 44 150 38 L150 90 L0 90Z" fill="rgba(0,194,255,.12)"/>
+                      <circle cx="150" cy="38" r="2.6" fill="#00C2FF"/>
+                    </svg>
+                  </div>
+                  <div class="am-cartao">
+                    <span>Avanço por disciplina</span>
+                    <div class="am-barra">Engenharia<div><i style="width:92%"></i></div><em>92%</em></div>
+                    <div class="am-barra">Suprimentos<div><i style="width:78%"></i></div><em>78%</em></div>
+                    <div class="am-barra">Construção<div><i style="width:54%"></i></div><em>54%</em></div>
+                    <div class="am-barra">Montagem<div><i style="width:41%"></i></div><em>41%</em></div>
+                    <div class="am-barra">Comissionam.<div><i style="width:18%"></i></div><em>18%</em></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notebook-base"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Resultados
+     ====================================================================== -->
+<section class="resultados" aria-label="Resultados">
+  <div class="envoltorio resultados-grade revelar">
+    <div>
+      <p class="sobretitulo">Resultados</p>
+      <h2>Mais controle.<br>Mais eficiência.<br>Mais valor.</h2>
+    </div>
+    <div class="resultado"><strong>100%</strong><span>Visão integrada<br>do ciclo EPC</span></div>
+    <div class="resultado"><strong>Dados</strong><span>em tempo real</span></div>
+    <div class="resultado"><strong>Decisões</strong><span>mais rápidas<br>e seguras</span></div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Soluções
+     ====================================================================== -->
+<section class="solucoes" id="solucoes">
+  <div class="envoltorio">
+    <div class="solucoes-cabeca revelar">
+      <div>
+        <p class="sobretitulo">Soluções</p>
+        <h2 class="titulo-secao">Visão completa<br>do empreendimento.</h2>
+      </div>
+      <p>Módulos integrados para acompanhar o projeto de forma estruturada, com dados consistentes e foco em resultados.</p>
+      <a href="#contato" class="link-seta">Fale com um especialista <svg><use href="#i-seta"/></svg></a>
+    </div>
+
+    <div class="solucoes-grade revelar">
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-project-controls.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16c3-1 4-7 7-8s4 2 6 1"/></svg>
+        </div>
+        <h3>Project Controls</h3>
+        <p>Curva S, EAP, marcos e forecast.</p>
+      </a>
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-engenharia.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2.5 8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M12 21.5v-9.5M3.5 7.25 12 12l8.5-4.75"/></svg>
+        </div>
+        <h3>Engenharia</h3>
+        <p>Documentos, BIM 3D/4D e integração.</p>
+      </a>
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-suprimentos.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V4h8v3M3 12h18"/></svg>
+        </div>
+        <h3>Suprimentos</h3>
+        <p>Requisições, compras, fornecedores e materiais.</p>
+      </a>
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-construcao.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18v2H3z"/><path d="M5 18v-3a7 7 0 0 1 14 0v3"/><path d="M10 8.3V5h4v3.3"/></svg>
+        </div>
+        <h3>Construção</h3>
+        <p>Produção, spools, juntas e qualidade.</p>
+      </a>
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-comissionamento.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        </div>
+        <h3>Comissionamento</h3>
+        <p>Sistemas, FVI, FVM e pendências.</p>
+      </a>
+      <a class="solucao" href="#contato">
+        <div class="solucao-imagem" style="--foto: url('/site/img/solucao-inteligencia.jpg')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4M7 13l3-3 2 2 5-5"/></svg>
+        </div>
+        <h3>Inteligência de Dados</h3>
+        <p>Dashboards executivos, analytics e IA.</p>
+      </a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ======================================================================
+     Rodapé
+     ====================================================================== -->
+<footer class="rodape-site">
+  <div class="envoltorio">
+    <div class="rodape-grade">
+      <div>
+        <span class="logo-epc" role="img" aria-label="EPCVIEW"><span class="logo-epc-nome">EPC<svg class="logo-epc-v"><use href="#v-marca"/></svg>IEW</span><span class="logo-epc-sub">Engineering Intelligence</span></span>
+        <p class="lema">Do dado à decisão. Do projeto à entrega.</p>
+      </div>
+      <div>
+        <h4>Soluções</h4>
+        <ul>
+          <li><a href="#solucoes">Project Controls</a></li>
+          <li><a href="#solucoes">Engenharia</a></li>
+          <li><a href="#solucoes">Suprimentos</a></li>
+          <li><a href="#solucoes">Construção</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="#plataforma">Plataforma</a></li>
+          <li><a href="#projetos">Projetos</a></li>
+          <li><a href="#sobre">Sobre</a></li>
+          <li><a href="#contato">Contato</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Clientes</h4>
+        <ul>
+          <li><a href="/login.html" data-acesso><span data-acesso-rotulo>Acessar plataforma</span></a></li>
+          <li><a href="#contato">Solicitar demonstração</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rodape-base">
+      <span>© <span id="ano">2026</span> EPCVIEW. Todos os direitos reservados.</span>
+      <span>Engineering Intelligence</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Vídeo institucional: site/video/apresentacao.mp4 -->
+<div class="video-modal" id="video-modal" role="dialog" aria-modal="true" aria-label="Vídeo de apresentação">
+  <div class="video-caixa">
+    <button class="video-fechar" id="fechar-video" aria-label="Fechar vídeo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <video id="video" controls preload="none" playsinline></video>
+    <div class="video-vazio" id="video-vazio"><p>O vídeo de apresentação estará disponível em breve.<br>Enquanto isso, <a href="#contato" style="color:#00C2FF" id="video-contato">solicite uma demonstração ao vivo</a>.</p></div>
+  </div>
+</div>
+
+<script src="/site/site.js"></script>
+</body>
+</html>

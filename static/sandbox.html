@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UHN Sandbox</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: {
+      uhnBlue: '#0a3d5e', uhnLightBlue: '#1a5f8e', uhnHover: '#2479b5'
+    } } }
+  };
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="assets/uhn-runtime.js"></script>
+
+<style>
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; margin: 0; background: #fff; }
+  #dash-root { padding: 1.5rem; }
+  .uhn-erro {
+    margin: 1.5rem; padding: 1rem 1.25rem; border-radius: .75rem;
+    background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: .8rem;
+    white-space: pre-wrap; line-height: 1.6;
+  }
+  .uhn-erro strong { display: block; font-family: 'Inter', sans-serif; font-size: .9rem; margin-bottom: .4rem; }
+</style>
+</head>
+<body>
+
+<!-- Ponto de montagem esperado pelo codigo do usuario -->
+<div id="dash-root"></div>
+
+<script>
+/**
+ * Host de execucao isolado.
+ *
+ * O codigo do dashboard chega por postMessage e e compilado com `new Function`.
+ * Nunca e interpolado dentro de um template literal - era exatamente isso que
+ * quebrava qualquer dashboard que usasse crase ou ${} no proprio codigo.
+ */
+(function () {
+  'use strict';
+
+  const root = document.getElementById('dash-root');
+  let origemPai = null;
+
+  function avisarPai(tipo, dados) {
+    if (!window.parent || window.parent === window) return;
+    window.parent.postMessage(Object.assign({ fonte: 'uhn-sandbox', tipo: tipo }, dados), '*');
+  }
+
+  function mostrarErro(titulo, detalhe) {
+    const box = document.createElement('div');
+    box.className = 'uhn-erro';
+    const t = document.createElement('strong');
+    t.textContent = titulo;
+    box.appendChild(t);
+    box.appendChild(document.createTextNode(detalhe));
+    root.appendChild(box);
+    avisarPai('erro', { mensagem: titulo + ' ' + detalhe });
+  }
+
+  // Erros assincronos que escapam do try/catch tambem precisam ser reportados.
+  window.addEventListener('error', e => avisarPai('erro', { mensagem: e.message }));
+  window.addEventListener('unhandledrejection', e => {
+    const motivo = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+    mostrarErro('Erro durante a execucao:', motivo);
+  });
+
+  // Espelha o console do dashboard no terminal do editor.
+  ['log', 'warn', 'error'].forEach(nivel => {
+    const original = console[nivel].bind(console);
+    console[nivel] = function () {
+      original.apply(null, arguments);
+      avisarPai('console', {
+        nivel: nivel,
+        mensagem: Array.from(arguments).map(a =>
+          typeof a === 'object' ? JSON.stringify(a) : String(a)
+        ).join(' ')
+      });
+    };
+  });
+
+  async function executar(codigo, fontes) {
+    root.innerHTML = '';
+    const inicio = performance.now();
+    try {
+      // Fontes escolhidas no editor chegam prontas como `dados.P21`, sem o
+      // dashboard precisar saber o nome do arquivo nem esperar por await.
+      const dados = await window.UHN.carregarFontes(fontes);
+      window.dados = dados;
+
+      const avisos = Object.entries(dados._erros || {});
+      if (avisos.length) {
+        avisarPai('console', {
+          nivel: 'warn',
+          mensagem: 'Fontes que falharam: ' + avisos.map(([k, v]) => k + ' (' + v + ')').join('; ')
+        });
+      }
+
+      // AsyncFunction: permite `await` direto no codigo do usuario.
+      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+      const fn = new AsyncFunction('consultar', 'UHN', 'dados', codigo);
+      await fn(window.consultar, window.UHN, dados);
+
+      avisarPai('pronto', {
+        ms: Math.round(performance.now() - inicio),
+        fontes: Object.keys(dados).filter(k => k !== '_erros').length
+      });
+    } catch (err) {
+      mostrarErro('Erro ao executar o dashboard:', (err && err.stack) || String(err));
+    }
+  }
+
+  window.addEventListener('message', ev => {
+    const dados = ev.data;
+    if (!dados || dados.fonte !== 'uhn-host') return;
+    if (dados.tipo === 'executar') {
+      origemPai = ev.origin;
+      if (dados.recarregar) window.UHN.limparCache();
+      executar(String(dados.codigo || ''), dados.fontes || []);
+    }
+  });
+
+  avisarPai('aguardando');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(380px, .85fr);
+    background: var(--navy);
+  }
+
+  /* Fundo de partículas: puramente decorativo, não deve capturar clique nem foco. */
+  #particulas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Lado da marca ----------------------------------------------------------
+     A foto é opcional: site/img/hero.jpg (a mesma do site). Sem ela fica só
+     o degradê — nada quebra. Transparente o bastante para as partículas
+     (no canvas fixo atrás) aparecerem. */
+  .lado-marca {
+    position: relative;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 3rem 3.5rem;
+    color: #fff;
+    background:
+      linear-gradient(100deg, rgba(10, 26, 51, .92) 0%, rgba(10, 26, 51, .66) 55%, rgba(10, 26, 51, .4) 100%),
+      url('site/img/hero.jpg') center / cover no-repeat,
+      radial-gradient(900px 500px at 80% 110%, rgba(0, 194, 255, .22), transparent 60%),
+      linear-gradient(160deg, #0A1A33 0%, #0F2547 60%, #0B3A6B 100%);
+    overflow: hidden;
+  }
+  .lado-marca > * { position: relative; z-index: 1; }
+  .lado-marca .logo-epc { font-size: 46px; align-self: flex-start; }
+  .lm-chamada { max-width: 30rem; }
+  .lm-chamada h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.9rem, 3vw, 2.6rem); font-weight: 300; line-height: 1.15; letter-spacing: -.02em;
+  }
+  .lm-chamada p { margin: 0; color: rgba(255, 255, 255, .72); font-size: 1rem; line-height: 1.6; }
+  .lm-pilares {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
+    font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: rgba(255, 255, 255, .55);
+  }
+  .lm-pilares span::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; margin-right: .5rem;
+    border-radius: 50%; background: var(--cyan); vertical-align: middle;
+  }
+
+  /* Lado do formulário ---------------------------------------------------- */
+  .painel {
+    position: relative;
+    z-index: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 3rem clamp(2rem, 5vw, 4.5rem);
+    background: var(--superficie);
+  }
+  .painel-interno { width: 100%; max-width: 360px; margin: 0 auto; }
+
+  .voltar-site {
+    position: absolute; top: 1.6rem; left: clamp(2rem, 5vw, 4.5rem);
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .8rem; font-weight: 500; color: var(--texto-2); text-decoration: none;
+  }
+  .voltar-site:hover { color: var(--primary); }
+
+  .marca-movel { display: none; margin-bottom: 2rem; }
+  .marca-movel .logo-epc { font-size: 34px; }
+
+  .sobretitulo { margin: 0 0 .5rem; font-size: .7rem; font-weight: 700; letter-spacing: .2em; color: var(--primary); text-transform: uppercase; }
+  .titulo { margin: 0 0 .4rem; font-size: 1.6rem; font-weight: 600; letter-spacing: -.02em; }
+  .subtitulo { margin: 0 0 2rem; color: var(--texto-2); font-size: .9rem; }
+
+  .rotulo {
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--texto-2);
+    margin-bottom: .35rem;
+  }
+
+  .grupo { margin-bottom: 1rem; }
+
+  .senha-campo { position: relative; }
+  .senha-alternar {
+    position: absolute;
+    right: .5rem; top: 50%;
+    transform: translateY(-50%);
+    border: none; background: none;
+    color: var(--texto-3);
+    cursor: pointer;
+    padding: .35rem .4rem;
+    border-radius: 4px;
+    font-size: .7rem;
+    font-weight: 600;
+  }
+  .senha-alternar:hover { color: var(--azul-600); background: var(--azul-100); }
+
+  .aviso {
+    display: none;
+    align-items: flex-start;
+    gap: .5rem;
+    background: var(--red-soft);
+    border: 1px solid #f7c9cb;
+    color: #b3262b;
+    font-size: .78rem;
+    padding: .6rem .75rem;
+    border-radius: var(--raio);
+    margin-bottom: 1rem;
+    line-height: 1.45;
+  }
+  .aviso.visivel { display: flex; }
+
+  .rodape {
+    margin-top: 1.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--borda);
+    font-size: .72rem;
+    color: var(--texto-3);
+    line-height: 1.6;
+  }
+  .rodape a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+  @media (max-width: 860px) {
+    body { grid-template-columns: 1fr; }
+    .lado-marca { display: none; }
+    .marca-movel { display: block; }
+    .painel { min-height: 100vh; padding: 5rem 1.5rem 2rem; }
+    .voltar-site { left: 1.5rem; }
+  }
+</style>
+</head>
+
+<body>
+
+<canvas id="particulas" aria-hidden="true"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="epc-v-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A6CF0"/><stop offset="1" stop-color="#00C2FF"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<section class="lado-marca" aria-hidden="true">
+  <span class="logo-epc"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg>IEW</span><span class="logo-epc-sub">Engineering Intelligence</span></span>
+
+  <div class="lm-chamada">
+    <h1>Do dado à decisão.<br>Do projeto à entrega.</h1>
+    <p>Planejamento, engenharia, suprimentos, construção e comissionamento num só ambiente — com informação confiável e atualizada.</p>
+  </div>
+
+  <div class="lm-pilares">
+    <span>Integração</span><span>Tempo real</span><span>Visão executiva</span>
+  </div>
+</section>
+
+<main class="painel">
+  <a class="voltar-site" href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="m15 18-6-6 6-6"/></svg>
+    Voltar ao site
+  </a>
+
+  <div class="painel-interno surgir">
+    <div class="marca-movel">
+      <span class="logo-epc logo-epc-claro" role="img" aria-label="EPCVIEW"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg>IEW</span><span class="logo-epc-sub">Engineering Intelligence</span></span>
+    </div>
+
+    <p class="sobretitulo">Plataforma</p>
+    <h1 class="titulo">Acesse sua conta</h1>
+    <p class="subtitulo">Entre com o usuário fornecido pelo administrador.</p>
+
+    <div id="aviso" class="aviso" role="alert">
+      <span aria-hidden="true">⚠</span>
+      <span id="aviso-texto"></span>
+    </div>
+
+    <form id="formulario" novalidate>
+      <div class="grupo">
+        <label class="rotulo" for="login">Usuário</label>
+        <input class="campo" type="text" id="login" name="login"
+               autocomplete="username" autocapitalize="none" spellcheck="false"
+               placeholder="seu.usuario" required autofocus>
+      </div>
+
+      <div class="grupo">
+        <label class="rotulo" for="senha">Senha</label>
+        <div class="senha-campo">
+          <input class="campo" type="password" id="senha" name="senha"
+                 autocomplete="current-password" placeholder="••••••••" required
+                 style="padding-right: 3.4rem">
+          <button class="senha-alternar" type="button" id="ver-senha"
+                  aria-label="Mostrar senha">ver</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primario" type="submit" id="entrar" style="width:100%; height:2.75rem; margin-top:.4rem">
+        Entrar
+      </button>
+    </form>
+
+    <p class="rodape">
+      Esqueceu a senha? Procure um administrador do sistema.<br>
+      Ainda não usa o EPCVIEW? <a href="/#contato">Solicite uma demonstração</a>.
+    </p>
+  </div>
+</main>
+
+<script>
+/**
+ * Fundo de partículas — puramente estético, isolado da lógica de login.
+ * Ponto flutua devagar, foge do cursor ao chegar perto e se conecta às
+ * partículas vizinhas (e ao próprio cursor) por linhas que desaparecem com
+ * a distância. Respeita prefers-reduced-motion e pausa fora da aba ativa.
+ */
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('particulas');
+  if (!canvas || !canvas.getContext) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const ctx = canvas.getContext('2d');
+  const RAIO_LIGACAO = 130;
+  const RAIO_MOUSE = 150;
+  const RGB_LINHA = '0, 194, 255';    // --cyan, em rgb
+
+  let largura = 0, altura = 0, dpr = 1;
+  let particulas = [];
+  let quadro = null;
+  const mouse = { x: 0, y: 0, ativo: false };
+
+  function criarParticula() {
+    return {
+      x: Math.random() * largura,
+      y: Math.random() * altura,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      r: Math.random() * 1.6 + 0.8
+    };
+  }
+
+  function redimensionar() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    largura = window.innerWidth;
+    altura = window.innerHeight;
+    canvas.width = largura * dpr;
+    canvas.height = altura * dpr;
+    canvas.style.width = largura + 'px';
+    canvas.style.height = altura + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const quantidade = Math.max(28, Math.min(90, Math.round((largura * altura) / 16000)));
+    particulas = Array.from({ length: quantidade }, criarParticula);
+  }
+
+  function passo() {
+    ctx.clearRect(0, 0, largura, altura);
+
+    for (const p of particulas) {
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (mouse.ativo) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < RAIO_MOUSE && dist > 0.01) {
+          const forca = (1 - dist / RAIO_MOUSE) * 0.6;
+          p.x += (dx / dist) * forca;
+          p.y += (dy / dist) * forca;
+        }
+      }
+
+      if (p.x < 0 || p.x > largura) p.vx *= -1;
+      if (p.y < 0 || p.y > altura) p.vy *= -1;
+      p.x = Math.max(0, Math.min(largura, p.x));
+      p.y = Math.max(0, Math.min(altura, p.y));
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(192, 226, 240, .55)';
+      ctx.fill();
+    }
+
+    for (let i = 0; i < particulas.length; i++) {
+      for (let j = i + 1; j < particulas.length; j++) {
+        const a = particulas[i], b = particulas[j];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (dist < RAIO_LIGACAO) {
+          ctx.strokeStyle = 'rgba(' + RGB_LINHA + ', ' + ((1 - dist / RAIO_LIGACAO) * 0.28) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    if (mouse.ativo) {
+      for (const p of particulas) {
+        const dist = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+        if (dist < RAIO_MOUSE) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, ' + ((1 - dist / RAIO_MOUSE) * 0.35) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    quadro = requestAnimationFrame(passo);
+  }
+
+  function moverMouse(x, y) { mouse.x = x; mouse.y = y; mouse.ativo = true; }
+
+  window.addEventListener('mousemove', e => moverMouse(e.clientX, e.clientY));
+  window.addEventListener('mouseleave', () => { mouse.ativo = false; });
+  window.addEventListener('touchmove', e => {
+    if (e.touches[0]) moverMouse(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchend', () => { mouse.ativo = false; });
+  window.addEventListener('resize', redimensionar);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelAnimationFrame(quadro);
+    else quadro = requestAnimationFrame(passo);
+  });
+
+  redimensionar();
+  quadro = requestAnimationFrame(passo);
+})();
+
+(function () {
+  'use strict';
+
+  const form = document.getElementById('formulario');
+  const botao = document.getElementById('entrar');
+  const aviso = document.getElementById('aviso');
+  const avisoTexto = document.getElementById('aviso-texto');
+
+  function mostrarAviso(mensagem) {
+    avisoTexto.textContent = mensagem;      // textContent: a mensagem vem do servidor
+    aviso.classList.add('visivel');
+  }
+
+  document.getElementById('ver-senha').addEventListener('click', function () {
+    const campo = document.getElementById('senha');
+    const visivel = campo.type === 'text';
+    campo.type = visivel ? 'password' : 'text';
+    this.textContent = visivel ? 'ver' : 'ocultar';
+    this.setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
+    campo.focus();
+  });
+
+  /** Só aceita caminhos internos: evita virar trampolim para outro site. */
+  function destinoSeguro() {
+    const bruto = new URLSearchParams(location.search).get('destino') || '/lista_dashboards.html';
+    return /^\/[^/\\]/.test(bruto) ? bruto : '/lista_dashboards.html';
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    aviso.classList.remove('visivel');
+
+    const login = document.getElementById('login').value.trim();
+    const senha = document.getElementById('senha').value;
+    if (!login || !senha) { mostrarAviso('Preencha usuário e senha.'); return; }
+
+    botao.disabled = true;
+    botao.textContent = 'Entrando...';
+
+    try {
+      const resp = await fetch('/api/sessao/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ login, senha })
+      });
+      const corpo = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        mostrarAviso(corpo.error || 'Não foi possível entrar.');
+        document.getElementById('senha').value = '';
+        document.getElementById('senha').focus();
+        return;
+      }
+      location.href = destinoSeguro();
+    } catch (err) {
+      mostrarAviso('Servidor fora do ar. Verifique se o sistema está rodando.');
+    } finally {
+      botao.disabled = false;
+      botao.textContent = 'Entrar';
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuários · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  .us-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+  .us-tabela th {
+    text-align: left; padding: .6rem .8rem;
+    font-size: .65rem; font-weight: 800; letter-spacing: .07em;
+    color: var(--texto-3); text-transform: uppercase;
+    border-bottom: 1px solid var(--borda);
+  }
+  .us-tabela td { padding: .7rem .8rem; border-bottom: 1px solid var(--borda); }
+  .us-tabela tbody tr:last-child td { border-bottom: none; }
+  .us-tabela tbody tr:hover { background: var(--superficie-2); }
+
+  .us-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--azul-100); color: var(--azul-700);
+    display: grid; place-items: center;
+    font-size: .7rem; font-weight: 700; flex-shrink: 0;
+  }
+  .us-acoes { display: flex; gap: .3rem; justify-content: flex-end; }
+
+  .grupo { margin-bottom: .85rem; }
+  .rotulo { display: block; font-size: .73rem; font-weight: 600; color: var(--texto-2); margin-bottom: .3rem; }
+  .dica { font-size: .68rem; color: var(--texto-3); margin-top: .25rem; }
+
+  .gr-checkbox {
+    display: flex; align-items: flex-start; gap: .55rem;
+    border: 1px solid var(--borda-forte); border-radius: var(--raio);
+    padding: .65rem .75rem; cursor: pointer; background: var(--superficie);
+    transition: border-color var(--transicao), background var(--transicao);
+  }
+  .gr-checkbox input { margin-top: .15rem; }
+  .gr-checkbox strong { display: block; font-size: .78rem; }
+  .gr-checkbox span.ajuda { display: block; font-size: .68rem; color: var(--texto-2); margin-top: .1rem; line-height: 1.4; font-weight: 400; }
+  .gr-checkbox:has(input:checked) { border-color: var(--azul-600); background: var(--azul-100); }
+  .etiqueta-admin {
+    display: inline-flex; align-items: center; font-size: .66rem; font-weight: 700;
+    color: var(--azul-800); background: var(--azul-100); padding: .1rem .45rem; border-radius: var(--radius-full);
+    margin-left: .4rem; text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .us-abas { display: flex; gap: .5rem; margin-bottom: 1.2rem; border-bottom: 1px solid var(--borda); }
+  .us-aba {
+    padding: .7rem .3rem .8rem; margin-bottom: -1px;
+    border: none; border-bottom: 2px solid transparent;
+    background: none; cursor: pointer; font-family: inherit;
+    font-size: .82rem; font-weight: 700; color: var(--texto-3);
+  }
+  .us-aba.ativa { color: var(--azul-800); border-bottom-color: var(--azul-600); }
+
+  .us-email { color: var(--texto-3); font-size: .74rem; display: block; margin-top: .1rem; }
+  .etiqueta-grupo {
+    display: inline-flex; align-items: center; font-size: .72rem; font-weight: 600;
+    color: var(--azul-700); background: var(--azul-100); padding: .15rem .55rem; border-radius: var(--radius-full);
+  }
+  .etiqueta-sem-grupo { color: var(--texto-3); font-size: .76rem; font-style: italic; }
+
+  .campo-checklist {
+    display: flex; flex-direction: column; gap: .4rem;
+    max-height: 11rem; overflow-y: auto;
+    padding: .6rem .7rem; border: 1px solid var(--borda-forte); border-radius: var(--raio);
+    background: var(--superficie-2);
+  }
+  .checklist-item { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--texto); cursor: pointer; }
+  .checklist-vazio { font-size: .76rem; color: var(--texto-3); font-style: italic; margin: 0; }
+  .checklist-separador { border: none; border-top: 1px dashed var(--borda); margin: .3rem 0; }
+
+  .gr-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+  .gr-tabela th {
+    text-align: left; padding: .6rem .8rem;
+    font-size: .65rem; font-weight: 800; letter-spacing: .07em;
+    color: var(--texto-3); text-transform: uppercase;
+    border-bottom: 1px solid var(--borda);
+  }
+  .gr-tabela td { padding: .7rem .8rem; border-bottom: 1px solid var(--borda); vertical-align: top; }
+  .gr-tabela tbody tr:last-child td { border-bottom: none; }
+  .gr-tabela tbody tr:hover { background: var(--superficie-2); }
+  .gr-resumo-linha { font-size: .74rem; color: var(--texto-2); }
+  .gr-resumo-linha strong { color: var(--texto); font-weight: 600; }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+    <header class="topo">
+      <div>
+        <h1>Usuários</h1>
+        <p id="resumo">Carregando...</p>
+      </div>
+      <button class="btn btn-primario" id="btn-novo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:15px;height:15px">
+          <path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/>
+          <path d="M19 8v6M22 11h-6"/>
+        </svg>
+        Novo usuário
+      </button>
+      <button class="btn btn-primario" id="btn-novo-grupo" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:15px;height:15px">
+          <path d="M17 21v-8H7v8M7 3v5h8"/><path d="M12 12v6M9 15h6"/>
+        </svg>
+        Novo grupo
+      </button>
+    </header>
+
+    <div class="corpo">
+      <div class="us-abas">
+        <button class="us-aba ativa" id="aba-usuarios" data-aba="usuarios">Usuários</button>
+        <button class="us-aba" id="aba-grupos" data-aba="grupos">Grupos</button>
+      </div>
+
+      <div id="painel-usuarios">
+        <div class="cartao" style="overflow:hidden">
+          <table class="us-tabela">
+            <thead>
+              <tr>
+                <th>Usuário</th><th>Login</th><th>Papel</th><th>Grupo</th><th>Último acesso</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="painel-grupos" style="display:none">
+        <div class="cartao" style="overflow:hidden" id="cartao-grupos">
+          <table class="gr-tabela">
+            <thead>
+              <tr>
+                <th>Grupo</th><th>Libera</th><th>Usuários</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="corpo-tabela-grupos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: criar / editar -->
+<div class="modal-fundo" id="modal" style="display:none">
+  <div class="modal">
+    <h2 class="modal-titulo" id="modal-titulo">Novo usuário</h2>
+
+    <form id="formulario">
+      <div class="grupo">
+        <label class="rotulo" for="f-nome">Nome</label>
+        <input class="campo" id="f-nome" type="text" placeholder="João da Silva" required>
+      </div>
+
+      <div class="grupo" id="grupo-login">
+        <label class="rotulo" for="f-login">Login</label>
+        <input class="campo" id="f-login" type="text" placeholder="joao.silva"
+               autocapitalize="none" spellcheck="false">
+        <p class="dica">Letras, números, ponto, hífen ou _ (3 a 32 caracteres).</p>
+      </div>
+
+      <div class="grupo">
+        <label class="rotulo" for="f-email">E-mail <span style="font-weight:400;color:var(--texto-3)">(opcional)</span></label>
+        <input class="campo" id="f-email" type="email" placeholder="joao.silva@empresa.com">
+      </div>
+
+      <div class="grupo">
+        <label class="rotulo" for="f-senha">Senha</label>
+        <input class="campo" id="f-senha" type="text" placeholder="mínimo 6 caracteres" autocomplete="new-password">
+        <p class="dica" id="dica-senha">Anote e entregue ao usuário — ela não é exibida de novo.</p>
+      </div>
+
+      <div class="grupo" id="grupo-campo-grupo">
+        <label class="rotulo" for="f-grupo">Grupo</label>
+        <select class="campo" id="f-grupo" required>
+          <option value="" disabled selected>Selecione um grupo</option>
+        </select>
+        <p class="dica">O grupo decide tudo: se é administrador, e se não for, quais páginas, painéis e aplicações vê.</p>
+      </div>
+
+      <div class="modal-acoes" style="margin-top:1.1rem">
+        <button type="button" class="btn btn-contorno" id="btn-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="btn-confirmar">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: grupo (criar / editar) -->
+<div class="modal-fundo" id="modal-grupo" style="display:none">
+  <div class="modal" style="max-width:30rem">
+    <h2 class="modal-titulo" id="modal-grupo-titulo">Novo grupo</h2>
+
+    <form id="formulario-grupo">
+      <div class="grupo">
+        <label class="rotulo" for="fg-nome">Nome</label>
+        <input class="campo" id="fg-nome" type="text" placeholder="Ex.: Engenharia" required>
+      </div>
+
+      <div class="grupo">
+        <label class="gr-checkbox">
+          <input type="checkbox" id="fg-admin">
+          <span>
+            <strong>Grupo de administradores</strong>
+            <span class="ajuda">Acesso total: cria painéis, envia planilhas, gerencia usuários e grupos. As opções abaixo não se aplicam a um grupo assim.</span>
+          </span>
+        </label>
+      </div>
+
+      <div id="fg-restricoes">
+        <div class="grupo">
+          <span class="rotulo">Páginas liberadas</span>
+          <div class="campo-checklist" style="max-height:none">
+            <label class="checklist-item"><input type="checkbox" class="fg-pagina" value="galeria"> Dashboards</label>
+            <label class="checklist-item"><input type="checkbox" class="fg-pagina" value="planilhas"> Planilhas</label>
+          </div>
+        </div>
+
+        <div class="grupo">
+          <span class="rotulo">Painéis (dashboards)</span>
+          <label class="checklist-item" style="margin-bottom:.4rem">
+            <input type="checkbox" id="fg-todos-paineis"> Todos os painéis, inclusive os publicados depois
+          </label>
+          <div class="campo-checklist" id="fg-lista-paineis"></div>
+        </div>
+
+        <div class="grupo">
+          <span class="rotulo">Aplicações (Dockers)</span>
+          <label class="checklist-item" style="margin-bottom:.4rem">
+            <input type="checkbox" id="fg-todas-apps"> Todas as aplicações, inclusive as cadastradas depois
+          </label>
+          <div class="campo-checklist" id="fg-lista-apps"></div>
+        </div>
+      </div>
+
+      <div class="modal-acoes" style="margin-top:1.1rem">
+        <button type="button" class="btn btn-contorno" id="btn-cancelar-grupo">Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-grupo">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  let usuarios = [];
+  let grupos = [];
+  let dashboards = [];
+  let apps = [];
+  let eu = null;
+  let editando = null;          // null = criando
+  let editandoGrupo = null;     // null = criando
+
+  function nomeDoGrupo(grupoId) {
+    const g = grupos.find(g => g.id === grupoId);
+    return g ? g.nome : null;
+  }
+
+  function resumoLista(lista, totalDisponivel, plural, fraseTodos, fraseNenhum) {
+    if (lista === 'todos') return fraseTodos;
+    if (!lista.length) return fraseNenhum;
+    if (lista.includes('*')) {
+      const especificos = lista.filter(v => v !== '*').length;
+      return 'Qualquer usuário logado' + (especificos ? ' + ' + especificos + ' específico(s)' : '');
+    }
+    return lista.length + ' de ' + totalDisponivel + ' ' + plural;
+  }
+
+  function desenhar() {
+    const corpo = $('corpo-tabela');
+    corpo.innerHTML = '';
+
+    const admins = usuarios.filter(u => u.papel === 'admin').length;
+    $('resumo').textContent = usuarios.length + (usuarios.length === 1 ? ' usuário' : ' usuários') +
+      ' · ' + admins + (admins === 1 ? ' administrador' : ' administradores');
+
+    usuarios.forEach(u => {
+      const tr = document.createElement('tr');
+
+      const tdNome = document.createElement('td');
+      const caixa = document.createElement('div');
+      caixa.style.cssText = 'display:flex;align-items:center;gap:.6rem';
+      const avatar = document.createElement('span');
+      avatar.className = 'us-avatar';
+      avatar.textContent = (u.nome || u.login).slice(0, 2).toUpperCase();
+      const nomeCaixa = document.createElement('div');
+      const nome = document.createElement('span');
+      nome.style.fontWeight = '600';
+      nome.textContent = u.nome || u.login;
+      nomeCaixa.appendChild(nome);
+      if (u.id === eu.id) {
+        const voce = document.createElement('span');
+        voce.style.cssText = 'font-size:.66rem;color:var(--texto-3);font-weight:500;margin-left:.4rem';
+        voce.textContent = '(você)';
+        nomeCaixa.appendChild(voce);
+      }
+      if (u.email) {
+        const email = document.createElement('span');
+        email.className = 'us-email';
+        email.textContent = u.email;
+        nomeCaixa.appendChild(email);
+      }
+      caixa.append(avatar, nomeCaixa);
+      tdNome.appendChild(caixa);
+
+      const tdLogin = document.createElement('td');
+      tdLogin.style.cssText = 'color:var(--texto-2);font-family:ui-monospace,monospace;font-size:.76rem';
+      tdLogin.textContent = u.login;
+
+      const tdPapel = document.createElement('td');
+      const et = document.createElement('span');
+      et.className = 'etiqueta etiqueta-' + u.papel;
+      et.textContent = u.papel === 'admin' ? 'Admin' : 'Visualizador';
+      tdPapel.appendChild(et);
+
+      const tdGrupo = document.createElement('td');
+      const nomeGrupo = nomeDoGrupo(u.grupoId);
+      tdGrupo.innerHTML = nomeGrupo
+        ? '<span class="etiqueta-grupo">' + UHNUI.escapar(nomeGrupo) + '</span>'
+        : '<span class="etiqueta-sem-grupo">grupo removido</span>';
+
+      const tdAcesso = document.createElement('td');
+      tdAcesso.style.cssText = 'color:var(--texto-3);font-size:.76rem';
+      tdAcesso.textContent = u.ultimoAcesso ? UHNUI.dataRelativa(u.ultimoAcesso) : 'nunca entrou';
+
+      const tdAcoes = document.createElement('td');
+      const acoes = document.createElement('div');
+      acoes.className = 'us-acoes';
+
+      const editar = document.createElement('button');
+      editar.className = 'btn btn-suave';
+      editar.style.cssText = 'height:1.9rem;padding:0 .6rem;font-size:.73rem';
+      editar.textContent = 'Editar';
+      editar.addEventListener('click', () => abrirModal(u));
+      acoes.appendChild(editar);
+
+      // Ninguém remove a própria conta — evita o admin se trancar para fora.
+      if (u.id !== eu.id) {
+        const excluir = document.createElement('button');
+        excluir.className = 'btn btn-perigo';
+        excluir.style.cssText = 'height:1.9rem;width:1.9rem;padding:0';
+        excluir.title = 'Remover ' + (u.nome || u.login);
+        excluir.innerHTML = UHNUI.icone('<path d="M4 7h16M10 11v6M14 11v6"/>' +
+          '<path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>', 14);
+        excluir.addEventListener('click', () => remover(u));
+        acoes.appendChild(excluir);
+      }
+
+      tdAcoes.appendChild(acoes);
+      tr.append(tdNome, tdLogin, tdPapel, tdGrupo, tdAcesso, tdAcoes);
+      corpo.appendChild(tr);
+    });
+  }
+
+  function preencherSelectGrupo(grupoIdAtual) {
+    const select = $('f-grupo');
+    select.innerHTML = '<option value="" disabled' + (grupoIdAtual ? '' : ' selected') + '>Selecione um grupo</option>' +
+      grupos.map(g => '<option value="' + g.id + '">' + UHNUI.escapar(g.nome) + (g.admin ? ' (admin)' : '') + '</option>').join('');
+    if (grupoIdAtual) select.value = grupoIdAtual;
+  }
+
+  function abrirModal(usuario) {
+    if (!usuario && !grupos.length) {
+      UHNUI.aviso('Crie um grupo antes de cadastrar um usuário.', 'alerta');
+      mostrarAba('grupos');
+      return;
+    }
+
+    editando = usuario || null;
+
+    $('modal-titulo').textContent = usuario ? 'Editar usuário' : 'Novo usuário';
+    $('btn-confirmar').textContent = usuario ? 'Salvar' : 'Criar';
+    $('f-nome').value = usuario ? (usuario.nome || '') : '';
+    $('f-login').value = usuario ? usuario.login : '';
+    $('f-email').value = usuario ? (usuario.email || '') : '';
+    $('f-senha').value = '';
+    preencherSelectGrupo(usuario ? usuario.grupoId : null);
+
+    // O login identifica a conta e as sessões; trocá-lo depois só confundiria.
+    $('grupo-login').style.display = usuario ? 'none' : 'block';
+    $('f-senha').placeholder = usuario ? 'deixe em branco para manter' : 'mínimo 6 caracteres';
+    $('dica-senha').textContent = usuario
+      ? 'Trocar a senha encerra as sessões abertas deste usuário.'
+      : 'Anote e entregue ao usuário — ela não é exibida de novo.';
+
+    $('modal').style.display = 'grid';
+    $('f-nome').focus();
+  }
+
+  function fecharModal() { $('modal').style.display = 'none'; }
+
+  async function submeter(e) {
+    e.preventDefault();
+    const botao = $('btn-confirmar');
+    botao.disabled = true;
+
+    const corpo = {
+      nome: $('f-nome').value.trim(),
+      email: $('f-email').value.trim() || null,
+      grupoId: $('f-grupo').value
+    };
+    const senha = $('f-senha').value;
+    if (senha) corpo.senha = senha;
+
+    try {
+      let resp;
+      if (editando) {
+        resp = await fetch('/api/usuarios/' + editando.id, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin', body: JSON.stringify(corpo)
+        });
+      } else {
+        corpo.login = $('f-login').value.trim();
+        if (!corpo.senha) throw new Error('Defina uma senha para o novo usuário.');
+        resp = await fetch('/api/usuarios', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin', body: JSON.stringify(corpo)
+        });
+      }
+
+      const dados = await resp.json();
+      if (!resp.ok) throw new Error(dados.error || 'Não foi possível salvar.');
+
+      UHNUI.aviso(editando ? 'Usuário atualizado.' : 'Usuário criado.', 'sucesso');
+      fecharModal();
+      await carregar();
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  async function remover(u) {
+    const ok = await UHNUI.confirmar({
+      titulo: 'Remover usuário',
+      texto: (u.nome || u.login) + ' perderá o acesso ao sistema imediatamente.',
+      confirmar: 'Remover', perigo: true
+    });
+    if (!ok) return;
+
+    const resp = await fetch('/api/usuarios/' + u.id, { method: 'DELETE', credentials: 'same-origin' });
+    if (resp.ok) {
+      UHNUI.aviso('Usuário removido.', 'sucesso');
+      await carregar();
+    } else {
+      const erro = await resp.json().catch(() => ({}));
+      UHNUI.aviso(erro.error || 'Não foi possível remover.', 'erro');
+    }
+  }
+
+  async function carregar() {
+    const resp = await fetch('/api/usuarios', { credentials: 'same-origin' });
+    if (!resp.ok) { UHNUI.aviso('Sem permissão para listar usuários.', 'erro'); return; }
+    usuarios = await resp.json();
+    desenhar();
+  }
+
+  // -------------------------------------------------------------------
+  // Grupos — controlam quais páginas, painéis e aplicações um visualizador vê
+  // -------------------------------------------------------------------
+  function mostrarAba(aba) {
+    $('aba-usuarios').classList.toggle('ativa', aba === 'usuarios');
+    $('aba-grupos').classList.toggle('ativa', aba === 'grupos');
+    $('painel-usuarios').style.display = aba === 'usuarios' ? '' : 'none';
+    $('painel-grupos').style.display = aba === 'grupos' ? '' : 'none';
+    $('btn-novo').style.display = aba === 'usuarios' ? '' : 'none';
+    $('btn-novo-grupo').style.display = aba === 'grupos' ? '' : 'none';
+  }
+
+  async function carregarGrupos() {
+    const resp = await fetch('/api/grupos', { credentials: 'same-origin' });
+    grupos = resp.ok ? await resp.json() : [];
+  }
+
+  async function carregarDashboardsEApps() {
+    try {
+      const [respD, respA] = await Promise.all([
+        fetch('/api/dashboards', { credentials: 'same-origin' }),
+        fetch('/api/dockers', { credentials: 'same-origin' })
+      ]);
+      dashboards = respD.ok ? await respD.json() : [];
+      apps = respA.ok ? await respA.json() : [];
+    } catch {
+      dashboards = []; apps = [];
+    }
+  }
+
+  function desenharGrupos() {
+    if (!grupos.length) {
+      $('cartao-grupos').innerHTML =
+        '<div class="vazio">' +
+          '<div class="vazio-icone">' + UHNUI.icone('<path d="M17 21v-8H7v8M7 3v5h8"/><path d="M12 12v6M9 15h6"/>', 24) + '</div>' +
+          '<h3>Nenhum grupo ainda</h3>' +
+          '<p>Crie um grupo para controlar quais páginas, painéis e aplicações cada visualizador enxerga.</p>' +
+        '</div>';
+      return;
+    }
+
+    // Reconstrói a tabela inteira: o estado "vazio" acima apaga o <tbody>, então
+    // reaproveitar um #corpo-tabela-grupos de uma desenhada anterior seria arriscado.
+    $('cartao-grupos').innerHTML =
+      '<table class="gr-tabela"><thead><tr><th>Grupo</th><th>Libera</th><th>Usuários</th><th></th></tr></thead>' +
+      '<tbody id="corpo-tabela-grupos"></tbody></table>';
+    const corpo = $('corpo-tabela-grupos');
+
+    grupos.forEach(g => {
+      const tr = document.createElement('tr');
+
+      const tdNome = document.createElement('td');
+      tdNome.innerHTML = '<strong>' + UHNUI.escapar(g.nome) + '</strong>' +
+        (g.admin ? '<span class="etiqueta-admin">Admin</span>' : '');
+
+      const tdLibera = document.createElement('td');
+      if (g.admin) {
+        tdLibera.innerHTML = '<div class="gr-resumo-linha">Acesso total ao sistema.</div>';
+      } else {
+        const paginasTxt = g.paginas.length
+          ? g.paginas.map(p => p === 'galeria' ? 'Dashboards' : 'Planilhas').join(', ')
+          : 'nenhuma';
+        tdLibera.innerHTML =
+          '<div class="gr-resumo-linha"><strong>Páginas:</strong> ' + UHNUI.escapar(paginasTxt) + '</div>' +
+          '<div class="gr-resumo-linha"><strong>Painéis:</strong> ' + resumoLista(g.dashboards, dashboards.length, 'painéis', 'Todos os painéis', 'nenhum') + '</div>' +
+          '<div class="gr-resumo-linha"><strong>Aplicações:</strong> ' + resumoLista(g.aplicacoes, apps.length, 'aplicações', 'Todas as aplicações', 'nenhuma') + '</div>';
+      }
+
+      const tdUsuarios = document.createElement('td');
+      tdUsuarios.textContent = g.usuarios + (g.usuarios === 1 ? ' usuário' : ' usuários');
+
+      const tdAcoes = document.createElement('td');
+      const acoes = document.createElement('div');
+      acoes.className = 'us-acoes';
+
+      const editar = document.createElement('button');
+      editar.className = 'btn btn-suave';
+      editar.style.cssText = 'height:1.9rem;padding:0 .6rem;font-size:.73rem';
+      editar.textContent = 'Editar';
+      editar.addEventListener('click', () => abrirModalGrupo(g));
+      acoes.appendChild(editar);
+
+      const excluir = document.createElement('button');
+      excluir.className = 'btn btn-perigo';
+      excluir.style.cssText = 'height:1.9rem;width:1.9rem;padding:0';
+      excluir.title = 'Remover ' + g.nome;
+      excluir.innerHTML = UHNUI.icone('<path d="M4 7h16M10 11v6M14 11v6"/>' +
+        '<path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>', 14);
+      excluir.addEventListener('click', () => removerGrupo(g));
+      acoes.appendChild(excluir);
+
+      tdAcoes.appendChild(acoes);
+      tr.append(tdNome, tdLibera, tdUsuarios, tdAcoes);
+      corpo.appendChild(tr);
+    });
+  }
+
+  function preencherChecklist(containerId, itens, rotuloFn, valorFn, selecionados, travadoEmTodos) {
+    const container = $(containerId);
+    if (!itens.length) {
+      container.innerHTML = '<p class="checklist-vazio">Nada cadastrado ainda.</p>';
+      return;
+    }
+    container.innerHTML = itens.map(item => {
+      const valor = valorFn(item);
+      const marcado = travadoEmTodos || selecionados.includes(valor);
+      return '<label class="checklist-item"><input type="checkbox" value="' + valor + '"' +
+        (marcado ? ' checked' : '') + (travadoEmTodos ? ' disabled' : '') + '> ' +
+        UHNUI.escapar(rotuloFn(item)) + '</label>';
+    }).join('');
+  }
+
+  function coletarChecklist(containerId) {
+    return [...$(containerId).querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+  }
+
+  /** O grupo admin não usa páginas/painéis/aplicações — some (e desabilita) essa parte do formulário. */
+  function alternarRestricoesGrupo() {
+    const ehAdmin = $('fg-admin').checked;
+    $('fg-restricoes').style.display = ehAdmin ? 'none' : 'block';
+  }
+
+  function abrirModalGrupo(g) {
+    editandoGrupo = g || null;
+    $('modal-grupo-titulo').textContent = g ? 'Editar grupo' : 'Novo grupo';
+    $('btn-confirmar-grupo').textContent = g ? 'Salvar' : 'Criar';
+    $('fg-nome').value = g ? g.nome : '';
+    $('fg-admin').checked = g ? Boolean(g.admin) : false;
+    alternarRestricoesGrupo();
+
+    document.querySelectorAll('.fg-pagina').forEach(cb => cb.checked = g ? g.paginas.includes(cb.value) : false);
+
+    const todosPaineis = g ? g.dashboards === 'todos' : false;
+    $('fg-todos-paineis').checked = todosPaineis;
+    preencherChecklist('fg-lista-paineis', dashboards, d => d.titulo || 'Sem título', d => d.id,
+      g && Array.isArray(g.dashboards) ? g.dashboards : [], todosPaineis);
+
+    const todasApps = g ? g.aplicacoes === 'todos' : false;
+    $('fg-todas-apps').checked = todasApps;
+    preencherChecklist('fg-lista-apps', apps, a => a.titulo, a => a.id,
+      g && Array.isArray(g.aplicacoes) ? g.aplicacoes : [], todasApps);
+
+    $('modal-grupo').style.display = 'grid';
+    $('fg-nome').focus();
+  }
+
+  function fecharModalGrupo() { $('modal-grupo').style.display = 'none'; }
+
+  async function submeterGrupo(e) {
+    e.preventDefault();
+    const botao = $('btn-confirmar-grupo');
+    botao.disabled = true;
+
+    const corpo = {
+      nome: $('fg-nome').value.trim(),
+      admin: $('fg-admin').checked,
+      paginas: [...document.querySelectorAll('.fg-pagina:checked')].map(cb => cb.value),
+      dashboards: $('fg-todos-paineis').checked ? 'todos' : coletarChecklist('fg-lista-paineis'),
+      aplicacoes: $('fg-todas-apps').checked ? 'todos' : coletarChecklist('fg-lista-apps')
+    };
+
+    try {
+      const resp = editandoGrupo
+        ? await fetch('/api/grupos/' + editandoGrupo.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin', body: JSON.stringify(corpo)
+          })
+        : await fetch('/api/grupos', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin', body: JSON.stringify(corpo)
+          });
+
+      const dados = await resp.json();
+      if (!resp.ok) throw new Error(dados.error || 'Não foi possível salvar.');
+
+      UHNUI.aviso(editandoGrupo ? 'Grupo atualizado.' : 'Grupo criado.', 'sucesso');
+      fecharModalGrupo();
+      await carregarGrupos();
+      desenharGrupos();
+      desenhar();   // a etiqueta de grupo na tabela de usuários pode ter mudado de nome
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  async function removerGrupo(g) {
+    const ok = await UHNUI.confirmar({
+      titulo: 'Remover grupo',
+      texto: 'Usuários no grupo "' + g.nome + '" voltam ao padrão de visualizador, sem essa restrição.',
+      confirmar: 'Remover', perigo: true
+    });
+    if (!ok) return;
+
+    const resp = await fetch('/api/grupos/' + g.id, { method: 'DELETE', credentials: 'same-origin' });
+    if (resp.ok) {
+      UHNUI.aviso('Grupo removido.', 'sucesso');
+      await carregarGrupos();
+      desenharGrupos();
+      await carregar();
+    } else {
+      const erro = await resp.json().catch(() => ({}));
+      UHNUI.aviso(erro.error || 'Não foi possível remover.', 'erro');
+    }
+  }
+
+  (async function iniciar() {
+    eu = await UHNUI.montarBarraLateral('usuarios');
+    if (!eu) return;
+
+    if (eu.papel !== 'admin') {
+      document.querySelector('.conteudo').innerHTML =
+        '<div class="vazio" style="height:100%">' +
+          '<div class="vazio-icone">' +
+            UHNUI.icone('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>', 24) + '</div>' +
+          '<h3>Acesso restrito</h3><p>Somente administradores gerenciam usuários.</p></div>';
+      return;
+    }
+
+    $('btn-novo').addEventListener('click', () => abrirModal(null));
+    $('btn-cancelar').addEventListener('click', fecharModal);
+    $('formulario').addEventListener('submit', submeter);
+    $('modal').addEventListener('click', e => { if (e.target === $('modal')) fecharModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharModal(); fecharModalGrupo(); } });
+
+    $('aba-usuarios').addEventListener('click', () => mostrarAba('usuarios'));
+    $('aba-grupos').addEventListener('click', () => mostrarAba('grupos'));
+    $('btn-novo-grupo').addEventListener('click', () => abrirModalGrupo(null));
+    $('btn-cancelar-grupo').addEventListener('click', fecharModalGrupo);
+    $('formulario-grupo').addEventListener('submit', submeterGrupo);
+    $('modal-grupo').addEventListener('click', e => { if (e.target === $('modal-grupo')) fecharModalGrupo(); });
+    $('fg-admin').addEventListener('change', alternarRestricoesGrupo);
+    $('fg-todos-paineis').addEventListener('change', () => {
+      $('fg-lista-paineis').querySelectorAll('input').forEach(cb => cb.disabled = $('fg-todos-paineis').checked);
+    });
+    $('fg-todas-apps').addEventListener('change', () => {
+      $('fg-lista-apps').querySelectorAll('input').forEach(cb => cb.disabled = $('fg-todas-apps').checked);
+    });
+
+    await carregarGrupos();
+    await carregarDashboardsEApps();
+    desenharGrupos();
+    carregar();
+  })();
+})();
+</script>
+</body>
+</html>

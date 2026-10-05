@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  .v-topo {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    height: 3.25rem; padding: 0 .9rem;
+    background: linear-gradient(90deg, var(--navy), var(--navy-2));
+    border-bottom: 1px solid rgba(0, 194, 255, .18);
+    color: #fff; flex-shrink: 0; z-index: 10;
+  }
+  .v-esq { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+  .v-voltar {
+    width: 2rem; height: 2rem; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 8px; color: #a9c4d3; text-decoration: none;
+    transition: background var(--transicao), color var(--transicao);
+  }
+  .v-voltar:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .v-titulo { margin: 0; font-size: .92rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v-sub { margin: .05rem 0 0; font-size: .67rem; color: #8fb2c5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .v-dir { display: flex; align-items: center; gap: .35rem; flex-shrink: 0; }
+  .v-status { display: flex; align-items: center; gap: .35rem; font-size: .68rem; color: #8fb2c5; margin-right: .3rem; }
+  .v-btn {
+    height: 2rem; padding: 0 .7rem;
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: rgba(255,255,255,.1); color: #dbe8ef;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-size: .73rem; font-weight: 600; text-decoration: none;
+    transition: background var(--transicao), color var(--transicao);
+  }
+  .v-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+  .v-btn-icone { width: 2rem; padding: 0; justify-content: center; }
+
+  .v-corpo { flex: 1; position: relative; background: #fff; min-height: 0; }
+  #quadro { width: 100%; height: 100%; border: none; display: block; }
+
+  .v-camada {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #fff; gap: .8rem; text-align: center; padding: 1.5rem;
+  }
+  .v-giro {
+    width: 34px; height: 34px;
+    border: 3px solid var(--borda); border-top-color: var(--azul-600);
+    border-radius: 50%; animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .v-status, .rotulo-largo { display: none; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+    <header class="v-topo">
+      <div class="v-esq">
+        <a href="lista_dashboards.html" class="v-voltar" title="Voltar aos painéis" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:17px;height:17px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <div style="min-width:0">
+          <h1 class="v-titulo" id="titulo">Carregando...</h1>
+          <p class="v-sub" id="subtitulo"></p>
+        </div>
+      </div>
+
+      <div class="v-dir">
+        <span class="v-status" id="status"></span>
+
+        <button class="v-btn" id="btn-atualizar" title="Recarregar os dados das planilhas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:14px;height:14px">
+            <path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/>
+          </svg>
+          <span class="rotulo-largo">Atualizar</span>
+        </button>
+
+        <button class="v-btn v-btn-icone" id="btn-tela-cheia" title="Tela cheia (F)" aria-label="Tela cheia">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+          </svg>
+        </button>
+
+        <a class="v-btn v-btn-icone" id="btn-editar" href="#" title="Editar painel" aria-label="Editar" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+          </svg>
+        </a>
+      </div>
+    </header>
+
+    <div class="v-corpo">
+      <div class="v-camada" id="carregando">
+        <div class="v-giro"></div>
+        <p style="margin:0;font-size:.82rem;color:var(--texto-2);font-weight:500">Montando o painel...</p>
+      </div>
+
+      <div class="v-camada" id="erro" style="display:none">
+        <div class="vazio-icone" style="color:var(--erro);background:#fdeef0;border-color:#f6d4d8">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+               stroke-linejoin="round" style="width:22px;height:22px">
+            <path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5h.01"/>
+          </svg>
+        </div>
+        <h2 style="margin:0;font-size:.95rem;font-weight:700">Não foi possível abrir o painel</h2>
+        <p id="erro-msg" style="margin:0;font-size:.82rem;color:var(--texto-2);max-width:26rem;line-height:1.55"></p>
+        <a href="lista_dashboards.html" class="btn btn-primario" style="margin-top:.3rem">Voltar aos painéis</a>
+      </div>
+
+      <iframe id="quadro" src="sandbox.html" title="Conteúdo do painel"
+              sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+    </div>
+  </main>
+</div>
+
+<script src="assets/ui.js"></script>
+<script>
+/**
+ * Viewer único: busca o painel na API e entrega o código ao sandbox.
+ * Não existe um HTML por painel — uma página só, versionada.
+ */
+(function () {
+  'use strict';
+
+  const id = new URLSearchParams(location.search).get('id');
+  const quadro = document.getElementById('quadro');
+  const elStatus = document.getElementById('status');
+
+  let registro = null;
+  let sandboxPronto = false;
+  let pendente = null;
+
+  function status(html, cor) {
+    elStatus.style.color = cor || '#8fb2c5';
+    elStatus.innerHTML = html;
+  }
+
+  function mostrarErro(msg) {
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('erro').style.display = 'flex';
+    document.getElementById('erro-msg').textContent = msg;
+  }
+
+  function enviar(recarregar) {
+    const msg = {
+      fonte: 'uhn-host', tipo: 'executar',
+      codigo: registro.codigo,
+      fontes: registro.fontes || [],
+      recarregar: !!recarregar
+    };
+    if (sandboxPronto) quadro.contentWindow.postMessage(msg, '*');
+    else pendente = msg;
+  }
+
+  window.addEventListener('message', ev => {
+    const d = ev.data;
+    if (!d || d.fonte !== 'uhn-sandbox') return;
+
+    if (d.tipo === 'aguardando') {
+      sandboxPronto = true;
+      if (pendente) { quadro.contentWindow.postMessage(pendente, '*'); pendente = null; }
+    }
+    if (d.tipo === 'pronto') {
+      document.getElementById('carregando').style.display = 'none';
+      const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      status('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+             'stroke-linecap="round" style="width:12px;height:12px"><path d="M20 6 9 17l-5-5"/></svg>' +
+             hora + ' · ' + d.ms + 'ms');
+    }
+    if (d.tipo === 'erro') {
+      document.getElementById('carregando').style.display = 'none';
+      status('erro na execução', '#f2b8be');
+    }
+  });
+
+  async function iniciar() {
+    const usuario = await UHNUI.montarBarraLateral('galeria', id);
+    if (!usuario) return;                 // sem sessão, já redirecionou pro login
+
+    if (!id) { mostrarErro('Nenhum painel informado na URL (?id=...).'); return; }
+
+    try {
+      const resp = await fetch('/api/dashboards/' + encodeURIComponent(id), { credentials: 'same-origin' });
+      if (!resp.ok) throw new Error('O painel "' + id + '" não existe ou foi removido.');
+      registro = await resp.json();
+    } catch (err) {
+      mostrarErro(err.message);
+      return;
+    }
+
+    // textContent, nunca innerHTML: o título vem do usuário.
+    document.getElementById('titulo').textContent = registro.titulo;
+    document.title = registro.titulo + ' · EPCVIEW';
+
+    const quando = registro.atualizadoEm
+      ? new Date(registro.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      : null;
+    document.getElementById('subtitulo').textContent =
+      [registro.descricao, quando && 'Atualizado em ' + quando].filter(Boolean).join(' · ');
+
+    if (usuario.papel === 'admin') {
+      const editar = document.getElementById('btn-editar');
+      editar.href = 'index.html?edit=' + encodeURIComponent(registro.id);
+      editar.hidden = false;
+    }
+
+    enviar(false);
+  }
+
+  document.getElementById('btn-atualizar').addEventListener('click', () => {
+    if (!registro) return;
+    document.getElementById('carregando').style.display = 'flex';
+    status('recarregando...');
+    enviar(true);                          // limpa o cache e relê as planilhas
+  });
+
+  function telaCheia() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }
+
+  document.getElementById('btn-tela-cheia').addEventListener('click', telaCheia);
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'f' || e.key === 'F') telaCheia();
+  });
+
+  iniciar();
+})();
+</script>
+</body>
+</html>
