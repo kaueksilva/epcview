@@ -25,6 +25,9 @@ const contatos = require('./lib/contatos');
 const { podeVerPagina, podeVerDashboard, podeAbrirApp } = require('./lib/permissoes');
 
 const PORT = Number(process.env.PORT) || 8000;
+// Site institucional desligado por enquanto: a raiz leva ao login/painel e
+// /site/ e /api/contato respondem 404. SITE_PUBLICO=1 no ambiente religa tudo.
+const SITE_PUBLICO = process.env.SITE_PUBLICO === '1';
 const STATIC_DIR = path.join(__dirname, 'static');
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;        // dashboards são só código
@@ -506,7 +509,8 @@ async function rotearApi(req, res, url, usuario) {
     if (recurso === 'planilhas') return rotaPlanilhas(req, res, segmentos, usuario);
     if (recurso === 'dockers') return rotaDockers(req, res, segmentos, usuario);
     if (recurso === 'grupos') return rotaGrupos(req, res, segmentos, usuario);
-    if (recurso === 'contato') return rotaContato(req, res);
+    if (recurso === 'config') return enviarJSON(res, 200, { sitePublico: SITE_PUBLICO });
+    if (recurso === 'contato' && SITE_PUBLICO) return rotaContato(req, res);
     if (recurso === 'contatos') return rotaContatos(req, res, segmentos, usuario);
 
     enviarJSON(res, 404, { error: 'Rota não encontrada.' });
@@ -522,6 +526,19 @@ function servirEstatico(req, res, url, usuario) {
         caminho = decodeURIComponent(url.pathname);
     } catch {
         res.writeHead(400); res.end('Bad Request'); return;
+    }
+    if (!SITE_PUBLICO) {
+        // Sem site público, a raiz leva direto ao painel (ou ao login).
+        if (caminho === '/') {
+            res.writeHead(302, { Location: usuario ? '/lista_dashboards.html' : '/login.html' });
+            res.end();
+            return;
+        }
+        if (caminho === '/site' || caminho.startsWith(PREFIXO_SITE)) {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Not Found');
+            return;
+        }
     }
     // A raiz é o site público; o painel começa em /lista_dashboards.html.
     if (caminho === '/' || caminho === '/site' || caminho === PREFIXO_SITE) caminho = PREFIXO_SITE + 'index.html';
@@ -642,7 +659,8 @@ server.listen(PORT, async () => {
     }
 
     console.log('');
-    console.log('  EPCVIEW  ·  site: http://localhost:' + PORT + '  ·  painel: http://localhost:' + PORT + '/login.html');
+    console.log('  EPCVIEW  ·  ' + (SITE_PUBLICO ? 'site: http://localhost:' + PORT + '  ·  ' : 'site público desligado  ·  ') +
+                'painel: http://localhost:' + PORT + '/login.html');
     console.log('  ' + '-'.repeat(70));
     console.log('  ' + db.listarDashboards().length + ' dashboards  ·  ' + planilhas + ' planilhas  ·  ' +
                 db.listarUsuarios().length + ' usuários  ·  ' + contatos.contarNaoLidos() + ' contatos não lidos');

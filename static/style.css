@@ -379,6 +379,9 @@ body {
 .bl-secao:first-child { margin-top: 0; }
 body.lateral-recolhida .bl-secao { visibility: hidden; height: 1px; margin: var(--space-2) 0; overflow: hidden; }
 
+/* Links para o site público ficam com [hidden] enquanto ele está desligado */
+[data-site-publico][hidden] { display: none !important; }
+
 .bl-site {
     display: flex; align-items: center; gap: var(--space-2);
     margin: 0 var(--space-4) var(--space-2);

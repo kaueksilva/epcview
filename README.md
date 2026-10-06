@@ -16,8 +16,13 @@ EPCVIEW (paleta e tokens em `static/style.css`).
 node server.js
 ```
 
-Sem dependências e sem `npm install` — só Node.js. Site em http://localhost:8000,
-painel em http://localhost:8000/login.html.
+Sem dependências e sem `npm install` — só Node.js. Painel em
+http://localhost:8000/login.html.
+
+> **O site público está desligado por enquanto.** A raiz `/` leva ao login (ou
+> aos dashboards, com sessão), `/site/` e `/api/contato` respondem 404 e os links
+> "Voltar ao site" / "Ver site público" ficam ocultos. Para religar, defina
+> `SITE_PUBLICO=1` no `.env` (ou no Environment do Render).
 
 Na primeira execução o sistema cria o usuário `admin` e **imprime a senha no
 console uma única vez**. Anote: ela não é exibida de novo. Não há credencial

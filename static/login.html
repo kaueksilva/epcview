@@ -171,7 +171,7 @@
 </section>
 
 <main class="painel">
-  <a class="voltar-site" href="/">
+  <a class="voltar-site" href="/" data-site-publico hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="m15 18-6-6 6-6"/></svg>
     Voltar ao site
   </a>
@@ -215,12 +215,18 @@
     </form>
 
     <p class="rodape">
-      Esqueceu a senha? Procure um administrador do sistema.<br>
-      Ainda não usa o EPCVIEW? <a href="/#contato">Solicite uma demonstração</a>.
+      Esqueceu a senha? Procure um administrador do sistema.
+      <span data-site-publico hidden><br>Ainda não usa o EPCVIEW? <a href="/#contato">Solicite uma demonstração</a>.</span>
     </p>
   </div>
 </main>
 
+<script>
+// Links para o site institucional só aparecem quando ele está ligado no servidor.
+fetch('/api/config').then(r => r.json()).then(cfg => {
+  if (cfg.sitePublico) document.querySelectorAll('[data-site-publico]').forEach(el => { el.hidden = false; });
+}).catch(() => {});
+</script>
 <script>
 /**
  * Fundo de partículas — puramente estético, isolado da lógica de login.

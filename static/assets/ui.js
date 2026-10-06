@@ -91,6 +91,16 @@
         }
     }
 
+    /** O site institucional está ligado no servidor? Define se aparece o link "Ver site público". */
+    async function carregarSitePublico() {
+        try {
+            const resp = await fetch('/api/config', { credentials: 'same-origin' });
+            return resp.ok && (await resp.json()).sitePublico === true;
+        } catch {
+            return false;
+        }
+    }
+
     /** Busca o usuário da sessão; redireciona para o login se não houver. */
     async function carregarUsuario() {
         if (usuarioAtual) return usuarioAtual;
@@ -220,8 +230,8 @@
         const alvo = document.getElementById('barra-lateral');
         if (!alvo) return null;
 
-        const [usuario, paineis, apps] = await Promise.all([
-            carregarUsuario(), carregarPaineisResumo(), carregarAppsResumo()
+        const [usuario, paineis, apps, sitePublico] = await Promise.all([
+            carregarUsuario(), carregarPaineisResumo(), carregarAppsResumo(), carregarSitePublico()
         ]);
         if (!usuario) return null;
 
@@ -251,7 +261,7 @@
 
             '<nav class="bl-nav">' + navHtml + '</nav>' +
 
-              '<a class="bl-site" href="/" title="Abrir o site público">' +
+              '<a class="bl-site" href="/" title="Abrir o site público" data-site-publico' + (sitePublico ? '' : ' hidden') + '>' +
                 icone('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', 15) +
                 '<span>Ver site público</span>' +
               '</a>' +
