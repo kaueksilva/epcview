@@ -356,31 +356,141 @@
   @keyframes env-entrar { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
   .env-concluido { animation: env-entrar .3s cubic-bezier(.34, 1.56, .64, 1) both; }
 
+  /* Botão "voltar": só existe na planilha em tela cheia (telas pequenas) */
+  .pl-voltar {
+    display: none; place-items: center; flex-shrink: 0;
+    width: 36px; height: 36px; margin-left: -6px;
+    border: none; border-radius: var(--radius-sm); background: none;
+    color: var(--text); cursor: pointer;
+  }
+  .pl-voltar:hover { background: var(--surface-soft); }
+
+  /* Ficha da linha: todos os campos de uma linha, um embaixo do outro */
+  .ficha-fundo {
+    position: fixed; inset: 0; z-index: 180;
+    background: rgba(9, 33, 48, .45);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .ficha-fundo.aberto { opacity: 1; pointer-events: auto; }
+  .ficha {
+    width: 100%; max-width: 34rem; max-height: 85dvh;
+    display: flex; flex-direction: column;
+    background: var(--surface); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-xl);
+    transform: translateY(24px); transition: transform .25s cubic-bezier(.4, 0, .2, 1);
+  }
+  .ficha-fundo.aberto .ficha { transform: none; }
+  .ficha-topo {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  .ficha-topo strong { flex: 1; font-size: var(--text-base); }
+  .ficha-topo button {
+    width: 36px; height: 36px; display: grid; place-items: center;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text-muted); cursor: pointer; font-family: inherit;
+  }
+  .ficha-topo button:disabled { opacity: .4; cursor: default; }
+  .ficha-campos { margin: 0; padding: var(--space-2) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom)); overflow-y: auto; }
+  .ficha-campos div { padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .ficha-campos div:last-child { border-bottom: 0; }
+  .ficha-campos dt { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--text-light); }
+  .ficha-campos dd { margin: 2px 0 0; font-size: var(--text-base); color: var(--text); overflow-wrap: anywhere; white-space: pre-wrap; }
+  .ficha-campos dd.ficha-vazio { color: var(--text-light); font-style: italic; }
+
   @media (max-width: 1100px) {
     .pl-layout, .pl-layout.focado { grid-template-columns: 18rem minmax(0, 1fr); }
     .pl-passos { grid-template-columns: 1fr; max-width: 24rem; }
   }
-  @media (max-width: 900px) {
-    .pl-layout, .pl-layout.focado { grid-template-columns: minmax(0, 1fr); grid-template-rows: 42% minmax(0, 1fr); }
-    .pl-layout.focado { grid-template-rows: 26% minmax(0, 1fr); }
-  }
-  @media (max-width: 768px) {
-    /* No celular a página rola inteira: lista e planilha ganham altura própria */
-    .corpo { display: block !important; }
-    .pl-layout, .pl-layout.focado { height: auto; grid-template-rows: 46dvh 82dvh; }
-    .pl-layout.focado { grid-template-rows: 30dvh 82dvh; }
+
+  /* Tela baixa (notebook, tablet deitado): cabeçalho mais enxuto para sobrar espaço à tabela */
+  @media (min-width: 901px) and (max-height: 900px) {
     .pl-detalhe-topo { padding: var(--space-4); gap: var(--space-3); }
-    .pl-cab { flex-wrap: wrap; }
-    .pl-cab-acoes { width: 100%; }
-    .pl-cab-acoes .pl-acao { flex: 1; justify-content: center; }
-    .pl-tabela-barra { flex-wrap: wrap; }
-    .pl-exportar { width: 100%; }
-    .pl-exportar .pl-acao { flex: 1; justify-content: center; }
-    .pl-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
     .pl-metrica { padding: var(--space-2) var(--space-3); }
-    .pl-metrica b { font-size: var(--text-lg); }
+    .pl-metrica b { margin-top: 2px; font-size: var(--text-lg); }
+  }
+
+  /* Celular e tablet em pé: a lista ocupa a largura toda e a página rola. */
+  @media (max-width: 900px) {
+    .corpo { display: block !important; }
+    .pl-layout, .pl-layout.focado { display: block; height: auto; }
+    .pl-lista { overflow: visible; }
+    .pl-itens { overflow: visible; }
+    .pl-item { padding: 12px var(--space-3); }
+    .pl-detalhe { display: none; }
+  }
+
+  /* Celular e tablet (inclusive deitado): a planilha aberta vira uma tela
+     cheia por cima da lista, com "voltar" — em vez de ficar espremida. */
+  @media (max-width: 900px), (pointer: coarse) and (max-width: 1366px) {
+    .pl-layout.com-aberta .pl-detalhe {
+      display: flex; position: fixed; inset: 0; z-index: 120;
+      border: 0; border-radius: 0; box-shadow: none;
+      padding-top: env(safe-area-inset-top);
+    }
+    body.pl-tela-cheia { overflow: hidden; }
+
+    .pl-voltar { display: inline-grid; }
+    #btn-foco { display: none; }
+    .pl-detalhe-topo { padding: var(--space-3) var(--space-4); gap: var(--space-3); background: var(--surface); }
+    .pl-cab { flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+    .pl-cab .pl-tipo { display: none; }
+    .pl-cab-texto h3 { font-size: var(--text-base); }
+    .pl-cab-texto p { margin-top: 2px; font-size: var(--text-xs); }
+    .pl-cab-acoes { width: 100%; }
+    .pl-cab-acoes .pl-acao { flex: 1; justify-content: center; height: 38px; }
+
+    /* Métricas viram etiquetas numa linha só */
+    .pl-metricas { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pl-metrica { display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); }
+    .pl-metrica span { font-size: 10.5px; letter-spacing: .04em; }
+    .pl-metrica b, .pl-metrica.carregando b { margin: 0; font-size: var(--text-sm); }
+    .pl-detalhe-topo .pl-uso { display: none; }   /* o trecho de código é para o editor, no computador */
+
+    .pl-tabela-barra { flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+    .pl-tabela-barra .pl-busca { flex: 1 1 100%; max-width: none; }
+    .pl-tabela-barra .campo { font-size: 16px; }   /* abaixo de 16px o iPhone dá zoom ao focar */
+    .pl-exportar { width: 100%; margin-left: 0; }
+    .pl-exportar .pl-acao { flex: 1; justify-content: center; height: 36px; }
+
+    table.dados { font-size: 12px; }
+    table.dados th { padding: 8px 10px; }
+    table.dados td { padding: 9px 10px; max-width: 12rem; }
+    table.dados tbody tr { cursor: pointer; }
+    .pl-tabela { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .pl-tabela-rodape { padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom)); }
+  }
+
+  @media (max-width: 768px) {
     .pl-inicio { padding: var(--space-6) var(--space-4); }
     .pl-passos { margin-top: var(--space-5); }
+  }
+
+  /* Tablet (e celular grande deitado): sobra largura, então ações ao lado do
+     título e busca + exportar na mesma linha, sem botões esticados. */
+  @media (min-width: 600px) and (max-width: 900px), (min-width: 600px) and (pointer: coarse) and (max-width: 1366px) {
+    .pl-cab { flex-wrap: nowrap; }
+    .pl-cab-acoes { width: auto; }
+    .pl-cab-acoes .pl-acao { flex: none; }
+    .pl-tabela-barra { flex-wrap: nowrap; }
+    .pl-tabela-barra .pl-busca { flex: 1 1 auto; max-width: 28rem; }
+    .pl-exportar { width: auto; margin-left: auto; }
+    .pl-exportar .pl-acao { flex: none; }
+  }
+
+  /* Celular deitado: pouca altura, então só o essencial em cima da tabela */
+  @media (max-width: 900px) and (max-height: 500px), (max-height: 500px) and (pointer: coarse) {
+    .pl-detalhe-topo { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+    .pl-cab { flex-wrap: nowrap; }
+    .pl-cab .pl-tipo, .pl-cab-texto p, .pl-metricas, .pl-detalhe-topo .pl-uso, #exportar-rotulo, #btn-foco { display: none; }
+    .pl-cab-acoes { width: auto; }
+    .pl-cab-acoes .pl-acao { height: 34px; }
+    .pl-tabela-barra { flex-wrap: nowrap; padding: 6px var(--space-3); }
+    .pl-tabela-barra .pl-busca { flex: 1 1 auto; }
+    .pl-exportar { width: auto; }
+    .pl-tabela-rodape { display: none; }
   }
 </style>
 </head>
@@ -476,6 +586,10 @@
 
           <div class="pl-detalhe-topo" id="detalhe-topo" hidden>
             <div class="pl-cab">
+              <button type="button" class="pl-voltar" id="btn-voltar" aria-label="Voltar para a lista de planilhas" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                     stroke-linejoin="round" style="width:20px;height:20px"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
               <span class="pl-tipo" id="detalhe-tipo"></span>
               <div class="pl-cab-texto">
                 <h3 id="detalhe-titulo"></h3>
@@ -557,6 +671,27 @@
   </div>
 </div>
 
+<div class="ficha-fundo" id="ficha-fundo">
+  <div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
+    <div class="ficha-topo">
+      <strong id="ficha-titulo"></strong>
+      <button type="button" id="ficha-anterior" aria-label="Linha anterior" title="Linha anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:17px;height:17px"><path d="M18 15l-6-6-6 6"/></svg>
+      </button>
+      <button type="button" id="ficha-proxima" aria-label="Próxima linha" title="Próxima linha">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:17px;height:17px"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <button type="button" id="ficha-fechar" aria-label="Fechar" title="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:17px;height:17px"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <dl class="ficha-campos" id="ficha-campos"></dl>
+  </div>
+</div>
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script src="assets/ui.js"></script>
 <script src="assets/uhn-runtime.js"></script>
@@ -569,6 +704,11 @@
   let aberta = null;
   let usuario = null;
   const marcadas = new Set();   // nomes selecionados para exclusao em lote
+
+  // Mesma condição do CSS: celular, tablet em pé e celular deitado abrem a
+  // planilha em tela cheia, com "voltar", e uma linha tocada vira uma ficha.
+  const telaCompacta = matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1366px)');
+  const toque = matchMedia('(pointer: coarse)');
 
   function planilhasVisiveis() {
     const termo = $('busca').value.trim().toLowerCase();
@@ -764,6 +904,7 @@
 
     const exibidas = indices.slice(0, LIMITE_LINHAS);
     const total = linhasAbertas.length.toLocaleString('pt-BR');
+    const dica = telaCompacta.matches || toque.matches ? ' · toque numa linha para ver todos os campos' : '';
     $('filtro-contagem').textContent = termo
       ? indices.length.toLocaleString('pt-BR') + ' de ' + total + ' linhas'
       : '';
@@ -775,11 +916,13 @@
           (termo ? ' linhas encontradas' : ' linhas') + ' · o painel lê todas'
         : 'Mostrando ' + (exibidas.length === 1 ? 'a única linha' : 'todas as ' + exibidas.length.toLocaleString('pt-BR') + ' linhas') +
           (termo ? ' encontradas' : '');
+    if (indices.length) $('detalhe-rodape').textContent += dica;
 
     const frag = document.createDocumentFragment();
     exibidas.forEach(i => {
       const linha = linhasAbertas[i];
       const tr = document.createElement('tr');
+      tr.dataset.i = i;
       const num = document.createElement('td');
       num.className = 'pl-num';
       num.textContent = i + 1;
@@ -798,9 +941,82 @@
     $('tbody').appendChild(frag);
   }
 
+  // ---------------------------------------------------------------------
+  // Tela cheia em telas pequenas
+  // ---------------------------------------------------------------------
+
+  /** Abre a planilha por cima da lista. O "voltar" do celular fecha em vez de sair da página. */
+  function entrarTelaCheia() {
+    document.querySelector('.pl-layout').classList.add('com-aberta');
+    if (!telaCompacta.matches) return;
+    document.body.classList.add('pl-tela-cheia');
+    if (!(history.state && history.state.planilhaAberta)) history.pushState({ planilhaAberta: true }, '');
+  }
+
+  function sairTelaCheia() {
+    document.querySelector('.pl-layout').classList.remove('com-aberta');
+    document.body.classList.remove('pl-tela-cheia');
+  }
+
+  function voltarParaLista() {
+    if (history.state && history.state.planilhaAberta) { history.back(); return; }   // o popstate fecha
+    fecharDetalhe();
+    desenharLista();
+  }
+
+  // ---------------------------------------------------------------------
+  // Ficha: uma linha com todos os campos, para quem não vê a tabela inteira
+  // ---------------------------------------------------------------------
+
+  let fichaIndices = [];
+  let fichaPosicao = -1;
+
+  function textoDoValor(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (v instanceof Date) return isNaN(v) ? null : v.toLocaleString('pt-BR');
+    if (typeof v === 'number') return v.toLocaleString('pt-BR', { maximumFractionDigits: 6 });
+    return String(v);
+  }
+
+  function desenharFicha() {
+    const i = fichaIndices[fichaPosicao];
+    const linha = linhasAbertas[i];
+    $('ficha-titulo').textContent = 'Linha ' + (i + 1).toLocaleString('pt-BR') +
+      (fichaIndices.length > 1 ? ' · ' + (fichaPosicao + 1) + ' de ' + fichaIndices.length.toLocaleString('pt-BR') : '');
+    const campos = $('ficha-campos');
+    campos.innerHTML = '';
+    colunasAbertas.forEach(c => {
+      const bloco = document.createElement('div');
+      const dt = document.createElement('dt');
+      dt.textContent = c;
+      const dd = document.createElement('dd');
+      const texto = textoDoValor(linha[c]);
+      dd.textContent = texto === null ? 'vazio' : texto;
+      if (texto === null) dd.className = 'ficha-vazio';
+      bloco.append(dt, dd);
+      campos.appendChild(bloco);
+    });
+    campos.scrollTop = 0;
+    $('ficha-anterior').disabled = fichaPosicao <= 0;
+    $('ficha-proxima').disabled = fichaPosicao >= fichaIndices.length - 1;
+  }
+
+  function abrirFicha(indice) {
+    fichaIndices = indicesFiltrados();   // anterior/próxima andam pelas linhas da busca atual
+    fichaPosicao = fichaIndices.indexOf(indice);
+    if (fichaPosicao < 0) return;
+    desenharFicha();
+    $('ficha-fundo').classList.add('aberto');
+  }
+
+  function fecharFicha() {
+    $('ficha-fundo').classList.remove('aberto');
+  }
+
   async function abrir(planilha) {
     aberta = planilha;
     desenharLista();
+    entrarTelaCheia();
 
     const metrica = (valor, rotulo, classe) =>
       '<div class="pl-metrica' + (classe ? ' ' + classe : '') + '"><span>' + rotulo + '</span><b>' + valor + '</b></div>';
@@ -1058,6 +1274,8 @@
 
   function fecharDetalhe() {
     aberta = null;
+    fecharFicha();
+    sairTelaCheia();
     linhasAbertas = [];
     colunasAbertas = [];
     document.querySelector('.pl-layout').classList.remove('focado');
@@ -1145,6 +1363,34 @@
     $('filtro-linhas').addEventListener('input', () => {
       clearTimeout(esperaFiltro);
       esperaFiltro = setTimeout(desenharTabela, 150);   // planilhas grandes: não refiltra a cada tecla
+    });
+
+    $('btn-voltar').addEventListener('click', voltarParaLista);
+    window.addEventListener('popstate', e => {
+      if ($('ficha-fundo').classList.contains('aberto')) fecharFicha();
+      if (aberta && !(e.state && e.state.planilhaAberta)) { fecharDetalhe(); desenharLista(); }
+    });
+    // Girou o aparelho ou redimensionou a janela: a trava de rolagem acompanha.
+    telaCompacta.addEventListener('change', () => {
+      document.body.classList.toggle('pl-tela-cheia', Boolean(aberta) && telaCompacta.matches);
+    });
+
+    $('tbody').addEventListener('click', e => {
+      if (!telaCompacta.matches && !toque.matches) return;   // no computador, clicar serve para selecionar texto
+      const tr = e.target.closest('tr');
+      if (tr && tr.dataset.i !== undefined) abrirFicha(Number(tr.dataset.i));
+    });
+    $('ficha-fechar').addEventListener('click', fecharFicha);
+    $('ficha-fundo').addEventListener('click', e => { if (e.target === $('ficha-fundo')) fecharFicha(); });
+    $('ficha-anterior').addEventListener('click', () => { if (fichaPosicao > 0) { fichaPosicao--; desenharFicha(); } });
+    $('ficha-proxima').addEventListener('click', () => {
+      if (fichaPosicao < fichaIndices.length - 1) { fichaPosicao++; desenharFicha(); }
+    });
+    document.addEventListener('keydown', e => {
+      if (!$('ficha-fundo').classList.contains('aberto')) return;
+      if (e.key === 'Escape') fecharFicha();
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') $('ficha-proxima').click();
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') $('ficha-anterior').click();
     });
 
     $('btn-copiar').addEventListener('click', async () => {
