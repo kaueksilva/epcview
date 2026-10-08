@@ -517,8 +517,62 @@ function analisarUrl(req) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Banco indisponível: o servidor fica no ar e diz o porquê
+// ---------------------------------------------------------------------------
+
+/**
+ * Sem o banco, o servidor não cai: se caísse, a hospedagem mostraria só um
+ * "503 Service Unavailable" genérico, sem pista do motivo. Em vez disso ele
+ * sobe, tenta reconectar sozinho e explica o problema em /api/saude e numa
+ * página de status.
+ */
+const estadoBanco = { motivo: 'Conectando ao banco de dados...', desde: new Date().toISOString() };
+
+function escaparHtml(texto) {
+    return String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function paginaBancoIndisponivel(res) {
+    const corpo = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<meta http-equiv="refresh" content="20"><title>EPCVIEW · aguardando o banco</title>' +
+        '<style>body{font-family:system-ui,sans-serif;background:#0b1730;color:#e8eefc;display:grid;place-items:center;' +
+        'min-height:100vh;margin:0;padding:16px}main{max-width:34rem}h1{font-size:1.3rem}code{background:#16264a;' +
+        'padding:.15rem .4rem;border-radius:4px}p{line-height:1.5;color:#b9c6e4}</style></head><body><main>' +
+        '<h1>O sistema está no ar, mas sem acesso ao banco de dados</h1>' +
+        '<p><strong>Motivo:</strong> ' + escaparHtml(estadoBanco.motivo) + '</p>' +
+        '<p>O servidor tenta reconectar sozinho a cada 15 segundos, e esta página se atualiza a cada 20. ' +
+        'Na Hostinger, confira as variáveis <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, ' +
+        '<code>DB_USER</code> e <code>DB_PASSWORD</code> do app Node.js.</p></main></body></html>';
+    res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '20' });
+    res.end(corpo);
+}
+
+/** Atende o que dá para atender sem banco. Devolve true se já respondeu. */
+function atenderSemBanco(req, res, url) {
+    const caminho = url.pathname;
+    if (caminho === '/api/saude') {
+        enviarJSON(res, 503, { banco: 'indisponivel', motivo: estadoBanco.motivo, desde: estadoBanco.desde });
+        return true;
+    }
+    if (caminho === '/api/config') return false;
+    if (caminho.startsWith('/api/')) {
+        enviarJSON(res, 503, { error: 'Banco de dados indisponível: ' + estadoBanco.motivo });
+        return true;
+    }
+    // Site público, CSS, JS e imagens não dependem do banco; páginas do painel sim.
+    const ehSite = SITE_PUBLICO && (caminho === '/' || caminho === '/site' || caminho.startsWith(PREFIXO_SITE));
+    const ehPagina = caminho === '/' || caminho.endsWith('.html');
+    if (ehPagina && !ehSite) { paginaBancoIndisponivel(res); return true; }
+    return false;
+}
+
 const server = http.createServer(async (req, res) => {
     const url = analisarUrl(req);
+    if (!db.pronto() && atenderSemBanco(req, res, url)) return;
+    if (url.pathname === '/api/saude') { enviarJSON(res, 200, { banco: 'ok' }); return; }
+
     let usuario = null;
     try {
         usuario = await usuarioDaRequisicao(req);
@@ -546,35 +600,33 @@ const server = http.createServer(async (req, res) => {
 process.on('uncaughtException', err => console.error('[exceção não tratada]', err));
 process.on('unhandledRejection', err => console.error('[promise rejeitada]', err));
 
-async function subir() {
+const INTERVALO_RECONEXAO_MS = 15 * 1000;
+
+/** Conecta ao banco; se falhar, registra o motivo e tenta de novo depois, sem derrubar o servidor. */
+async function conectarBanco() {
     if (!db.configurado()) {
-        console.error('  [db] Banco não configurado. Defina DB_HOST, DB_PORT, DB_USER, DB_PASSWORD e DB_NAME');
-        console.error('       no .env (local) ou nas variáveis de ambiente da hospedagem.');
-        process.exit(1);
+        estadoBanco.motivo = 'Variáveis do banco não configuradas (DB_NAME e DB_USER estão vazias).';
+        console.error('  [db] ' + estadoBanco.motivo + ' Defina DB_HOST, DB_PORT, DB_NAME, DB_USER e DB_PASSWORD' +
+                      ' no .env (local) ou nas variáveis de ambiente da hospedagem.');
+        setTimeout(conectarBanco, INTERVALO_RECONEXAO_MS).unref();
+        return;
     }
     try {
         await db.iniciar();
     } catch (err) {
-        console.error('  [db] Não foi possível conectar ao MySQL em ' + (process.env.DB_HOST || 'localhost') +
-                      ':' + (process.env.DB_PORT || 3306) + ' — ' + (err.code || '') + ' ' + err.message);
-        process.exit(1);
+        estadoBanco.motivo = db.explicarErroConexao(err);
+        console.error('  [db] ' + estadoBanco.motivo + ' — nova tentativa em 15 s.');
+        setTimeout(conectarBanco, INTERVALO_RECONEXAO_MS).unref();
+        return;
     }
 
-    const senhaInicial = await db.garantirAdmin();
-    await db.limparSessoesVencidas();
-    setInterval(() => db.limparSessoesVencidas().catch(err => console.error('[db]', err.message)),
-        60 * 60 * 1000).unref();
-    const totais = await db.resumo();
-
-    server.listen(PORT, () => {
-        console.log('');
-        console.log('  EPCVIEW  ·  ' + (SITE_PUBLICO ? 'site: http://localhost:' + PORT + '  ·  ' : 'site público desligado  ·  ') +
-                    'painel: http://localhost:' + PORT + '/login.html');
-        console.log('  ' + '-'.repeat(70));
+    try {
+        const senhaInicial = await db.garantirAdmin();
+        await db.limparSessoesVencidas();
+        const totais = await db.resumo();
         console.log('  banco: ' + process.env.DB_NAME + ' @ ' + (process.env.DB_HOST || 'localhost'));
         console.log('  ' + totais.dashboards + ' dashboards  ·  ' + totais.planilhas + ' planilhas  ·  ' +
                     totais.usuarios + ' usuários  ·  ' + totais.grupos + ' grupos');
-
         if (senhaInicial) {
             console.log('');
             console.log('  ┌' + '─'.repeat(44) + '┐');
@@ -585,7 +637,21 @@ async function subir() {
             console.log('  └' + '─'.repeat(44) + '┘');
         }
         console.log('');
-    });
+    } catch (err) {
+        console.error('  [db] conectado, mas falhou ao preparar os dados: ' + err.message);
+    }
 }
 
-subir();
+setInterval(() => {
+    if (db.pronto()) db.limparSessoesVencidas().catch(err => console.error('[db]', err.message));
+}, 60 * 60 * 1000).unref();
+
+// O servidor sobe primeiro, sem esperar o banco: a hospedagem considera o app
+// no ar assim que a porta abre, e a página de status explica se o banco falhar.
+server.listen(PORT, () => {
+    console.log('');
+    console.log('  EPCVIEW  ·  ' + (SITE_PUBLICO ? 'site: http://localhost:' + PORT + '  ·  ' : 'site público desligado  ·  ') +
+                'painel: http://localhost:' + PORT + '/login.html');
+    console.log('  ' + '-'.repeat(70));
+    conectarBanco();
+});
