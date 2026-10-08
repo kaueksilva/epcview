@@ -216,11 +216,12 @@
 
     <p class="rodape">
       Esqueceu a senha? Procure um administrador do sistema.
-      <span data-site-publico hidden><br>Ainda não usa o EPCVIEW? <a href="/#contato">Solicite uma demonstração</a>.</span>
+      <span data-site-publico hidden><br>Ainda não usa o EPCVIEW? <a href="#" data-contato="whatsapp">Solicite uma demonstração</a>.</span>
     </p>
   </div>
 </main>
 
+<script src="/site/contato.js"></script>
 <script>
 // Links para o site institucional só aparecem quando ele está ligado no servidor.
 fetch('/api/config').then(r => r.json()).then(cfg => {

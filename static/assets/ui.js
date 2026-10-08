@@ -24,14 +24,6 @@
         { chave: 'usuarios', secao: 'admin', href: 'usuarios.html', rotulo: 'Usuários', somenteAdmin: true, icone:
             '<path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/>' +
             '<path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16.5 3.6a4 4 0 0 1 0 7.3"/>' },
-        { chave: 'contatos', secao: 'admin', href: 'contatos.html', rotulo: 'Contatos', somenteAdmin: true, icone:
-            '<path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="m3 7 9 6 9-6"/>' },
-        { chave: 'dockers', secao: 'admin', href: 'dockers.html', rotulo: 'Dockers', somenteAdmin: true, icone:
-            '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
-            '<rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>' },
-        { chave: 'aplicacoes', secao: 'plataforma', href: null, rotulo: 'Aplicações', icone:
-            '<circle cx="6.5" cy="6.5" r="3.2"/><circle cx="17.5" cy="6.5" r="3.2"/>' +
-            '<circle cx="6.5" cy="17.5" r="3.2"/><circle cx="17.5" cy="17.5" r="3.2"/>' }
     ];
 
     const icone = (caminho, tamanho) =>
@@ -74,18 +66,6 @@
             const lista = await resp.json();
             return lista.slice().sort((a, b) =>
                 String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR', { numeric: true }));
-        } catch {
-            return [];
-        }
-    }
-
-    /** Aplicações (Dockers) que o usuário pode abrir, para o grupo expansível "Aplicações". */
-    async function carregarAppsResumo() {
-        try {
-            const resp = await fetch('/api/dockers?menu=1', { credentials: 'same-origin' });
-            if (!resp.ok) return [];
-            const lista = await resp.json();
-            return lista.slice().sort((a, b) => String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR'));
         } catch {
             return [];
         }
@@ -151,7 +131,72 @@
     function aplicarPreferenciaLateral() {
         let recolhida = false;
         try { recolhida = localStorage.getItem(CHAVE_LATERAL) === '1'; } catch { /* modo privado */ }
-        document.body.classList.toggle('lateral-recolhida', recolhida);
+        // No celular a lateral é gaveta e abre sempre por extenso; a preferência só vale na tela larga.
+        document.body.classList.toggle('lateral-recolhida', recolhida && !TELA_MOVEL.matches);
+    }
+
+    // Mesmo corte do style.css: até 768px a barra lateral vira gaveta.
+    const TELA_MOVEL = window.matchMedia('(max-width: 768px)');
+
+    function alternarMenuMovel(abrir) {
+        const aberto = document.body.classList.toggle('menu-aberto', abrir);
+        const botao = document.getElementById('bl-menu-btn');
+        if (botao) botao.setAttribute('aria-expanded', String(aberto));
+        if (aberto) {
+            const fechar = document.getElementById('bl-fechar');
+            if (fechar) fechar.focus();
+        }
+    }
+
+    /**
+     * Botão de menu do celular. Uma tela com barra superior própria (o viewer)
+     * marca onde ele entra com [data-menu-movel]; nas demais criamos uma barra
+     * fina com o botão e a logo no topo do conteúdo.
+     */
+    function montarMenuMovel() {
+        if (document.getElementById('bl-menu-btn')) return;
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.id = 'bl-menu-btn';
+        botao.className = 'bl-menu-btn';
+        botao.setAttribute('aria-label', 'Abrir menu');
+        botao.setAttribute('aria-controls', 'barra-lateral');
+        botao.setAttribute('aria-expanded', 'false');
+        botao.innerHTML = icone('<path d="M4 6h16M4 12h16M4 18h16"/>', 20);
+        botao.addEventListener('click', () => alternarMenuMovel(true));
+
+        const encaixe = document.querySelector('[data-menu-movel]');
+        if (encaixe) {
+            encaixe.prepend(botao);
+        } else {
+            const conteudo = document.querySelector('.conteudo');
+            if (!conteudo) return;
+            const barra = document.createElement('div');
+            barra.className = 'barra-movel';
+            barra.appendChild(botao);
+            const marca = document.createElement('a');
+            marca.href = 'lista_dashboards.html';
+            marca.style.textDecoration = 'none';
+            marca.innerHTML = logo({ semSub: true });
+            barra.appendChild(marca);
+            conteudo.prepend(barra);
+        }
+
+        const fundo = document.createElement('div');
+        fundo.className = 'bl-fundo';
+        fundo.addEventListener('click', () => alternarMenuMovel(false));
+        document.body.appendChild(fundo);
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && document.body.classList.contains('menu-aberto')) {
+                alternarMenuMovel(false);
+                botao.focus();
+            }
+        });
+        TELA_MOVEL.addEventListener('change', () => {
+            alternarMenuMovel(false);
+            aplicarPreferenciaLateral();
+        });
     }
 
     function atualizarTituloRecolher() {
@@ -166,24 +211,27 @@
 
     function alternarLateral() {
         const recolhida = document.body.classList.toggle('lateral-recolhida');
+        esconderFlutuante();
         try { localStorage.setItem(CHAVE_LATERAL, recolhida ? '1' : '0'); } catch { /* modo privado */ }
         atualizarTituloRecolher();
         // O Monaco e os graficos precisam saber que o espaco mudou.
         setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
     }
 
-    /** Grupo expansível genérico: cabeçalho (link ou só rótulo) + seta + lista indentada abaixo. */
+    /** Grupo expansível: cabeçalho (link + contagem) + seta + lista de sub-itens num trilho abaixo. */
     function renderizarGrupoExpansivel(item, ativa, subItensHtml, chave, mensagemVazia, forcarAberto) {
         // Com um item ativo lá dentro, abre mesmo que a preferência salva seja "fechado" —
         // esconder o próprio destaque que o usuário veio ver seria pior que ignorar a preferência.
         const aberto = forcarAberto || preferenciaGrupo(chave);
-        const conteudo = subItensHtml.length ? subItensHtml.join('') : '<p class="bl-sub-vazio">' + mensagemVazia + '</p>';
+        const conteudo = subItensHtml.length
+            ? '<div class="bl-sub-lista">' + subItensHtml.join('') + '</div>'
+            : '<p class="bl-sub-vazio">' + mensagemVazia + '</p>';
         const classeAtiva = item.chave === ativa ? ' ativo' : '';
-        const rotuloTag = item.href
-            ? '<a href="' + item.href + '" data-rotulo="' + item.rotulo + '" class="bl-item bl-grupo-rotulo' + classeAtiva + '">' +
-                icone(item.icone) + '<span>' + item.rotulo + '</span></a>'
-            : '<span data-rotulo="' + item.rotulo + '" class="bl-item bl-grupo-rotulo' + classeAtiva + '">' +
-                icone(item.icone) + '<span>' + item.rotulo + '</span></span>';
+        const rotuloTag =
+            '<a href="' + item.href + '" data-rotulo="' + item.rotulo + '" class="bl-item bl-grupo-rotulo' + classeAtiva + '">' +
+              icone(item.icone) + '<span>' + item.rotulo + '</span>' +
+              (subItensHtml.length ? '<span class="bl-contagem">' + subItensHtml.length + '</span>' : '') +
+            '</a>';
 
         return (
             '<div class="bl-grupo' + (aberto ? ' aberto' : '') + '" id="bl-grupo-' + chave + '">' +
@@ -200,7 +248,7 @@
         );
     }
 
-    /** Renderiza um item de navegação; "galeria" e "aplicacoes" viram grupos expansíveis. */
+    /** Renderiza um item de navegação; "galeria" vira grupo expansível com os painéis. */
     function renderizarItemNav(item, ativa, contexto) {
         if (item.chave === 'galeria') {
             const subItens = contexto.paineis.map(p =>
@@ -208,15 +256,6 @@
                 escapar(p.titulo || 'Sem título') + '</a>');
             const temAtivo = contexto.paineis.some(p => p.id === contexto.subAtiva);
             return renderizarGrupoExpansivel(item, ativa, subItens, 'galeria', 'Nenhum painel publicado ainda.', temAtivo);
-        }
-
-        if (item.chave === 'aplicacoes') {
-            // Sem nenhuma aplicação liberada pro grupo, a seção some — não fica um item morto no menu.
-            if (!contexto.apps.length) return '';
-            const subItens = contexto.apps.map(a =>
-                '<a class="bl-sub-item" href="/' + encodeURIComponent(a.extensaoUrl) + '/" target="_blank" rel="noopener">' +
-                escapar(a.titulo || a.extensaoUrl) + '</a>');
-            return renderizarGrupoExpansivel(item, ativa, subItens, 'aplicacoes', 'Nenhuma aplicação disponível.');
         }
 
         return '<a href="' + item.href + '" data-rotulo="' + item.rotulo + '" ' +
@@ -230,8 +269,8 @@
         const alvo = document.getElementById('barra-lateral');
         if (!alvo) return null;
 
-        const [usuario, paineis, apps, sitePublico] = await Promise.all([
-            carregarUsuario(), carregarPaineisResumo(), carregarAppsResumo(), carregarSitePublico()
+        const [usuario, paineis, sitePublico] = await Promise.all([
+            carregarUsuario(), carregarPaineisResumo(), carregarSitePublico()
         ]);
         if (!usuario) return null;
 
@@ -243,7 +282,7 @@
             if (i.chave === 'galeria' || i.chave === 'planilhas') return podeVerPagina(i.chave);
             return true;
         });
-        const contexto = { paineis, apps, subAtiva };
+        const contexto = { paineis, subAtiva };
 
         // Itens na ordem das seções; o rótulo da seção só aparece se ela tiver algo visível.
         let navHtml = '';
@@ -254,10 +293,15 @@
 
         alvo.className = 'barra-lateral';
         alvo.innerHTML =
-            '<a class="bl-marca" href="lista_dashboards.html" title="EPCVIEW — início">' +
-              logo({ classe: 'bl-marca-logo' }) +
-              '<img class="bl-marca-icone" src="/favicon.svg" alt="EPCVIEW">' +
-            '</a>' +
+            '<div class="bl-topo">' +
+              '<a class="bl-marca" href="lista_dashboards.html" title="EPCVIEW — início">' +
+                logo({ classe: 'bl-marca-logo' }) +
+                '<img class="bl-marca-icone" src="/favicon.svg" alt="EPCVIEW">' +
+              '</a>' +
+              '<button type="button" class="bl-fechar" id="bl-fechar" aria-label="Fechar menu">' +
+                icone('<path d="M18 6 6 18M6 6l12 12"/>', 18) +
+              '</button>' +
+            '</div>' +
 
             '<nav class="bl-nav">' + navHtml + '</nav>' +
 
@@ -286,10 +330,98 @@
         document.getElementById('bl-recolher').addEventListener('click', alternarLateral);
         atualizarTituloRecolher();
 
+        montarMenuMovel();
+        document.getElementById('bl-fechar').addEventListener('click', () => alternarMenuMovel(false));
+        // Escolher um destino no menu do celular fecha a gaveta.
+        alvo.querySelectorAll('a').forEach(a => a.addEventListener('click', () => alternarMenuMovel(false)));
+
         alvo.querySelectorAll('.bl-seta-btn').forEach(botaoSeta =>
             botaoSeta.addEventListener('click', () => alternarGrupo(botaoSeta.id.replace(/^bl-seta-/, ''))));
 
+        ligarFlutuante(alvo);
+
         return usuario;
+    }
+
+    // Painel flutuante da lateral recolhida ----------------------------------
+
+    // Mesmo corte do style.css: entre 769 e 900px a lateral fica só com ícones.
+    const TELA_TRILHO = window.matchMedia('(min-width: 769px) and (max-width: 900px)');
+
+    function lateralSoIcones() {
+        if (TELA_MOVEL.matches) return false;
+        return TELA_TRILHO.matches || document.body.classList.contains('lateral-recolhida');
+    }
+
+    let flutuante = null;
+    let timerEsconder = null;
+
+    function esconderFlutuante() {
+        clearTimeout(timerEsconder);
+        if (flutuante) flutuante.classList.remove('visivel');
+    }
+
+    function agendarEsconder() {
+        clearTimeout(timerEsconder);
+        // Folga para o mouse atravessar o vão entre o ícone e o painel.
+        timerEsconder = setTimeout(esconderFlutuante, 180);
+    }
+
+    /** Ao lado do ícone: o nome do item ou, num grupo, o link do grupo e a lista inteira. */
+    function mostrarFlutuante(ancora) {
+        if (!lateralSoIcones()) return;
+        clearTimeout(timerEsconder);
+        if (!flutuante) {
+            flutuante = document.createElement('div');
+            flutuante.className = 'bl-flutuante';
+            flutuante.addEventListener('mouseenter', () => clearTimeout(timerEsconder));
+            flutuante.addEventListener('mouseleave', agendarEsconder);
+            flutuante.addEventListener('focusout', e => { if (!flutuante.contains(e.relatedTarget)) agendarEsconder(); });
+            document.body.appendChild(flutuante);
+        }
+
+        const item = ancora.querySelector('.bl-item') || ancora;
+        const grupo = ancora.closest('.bl-grupo');
+        flutuante.innerHTML = '';
+        if (grupo) {
+            const titulo = document.createElement('a');
+            titulo.className = 'bl-flutuante-titulo';
+            titulo.href = item.getAttribute('href');
+            titulo.textContent = item.dataset.rotulo;
+            flutuante.appendChild(titulo);
+            const lista = grupo.querySelector('.bl-sub-lista, .bl-sub-vazio');
+            if (lista) flutuante.appendChild(lista.cloneNode(true));
+            flutuante.classList.remove('so-rotulo');
+        } else {
+            const titulo = document.createElement('span');
+            titulo.className = 'bl-flutuante-titulo';
+            titulo.textContent = item.dataset.rotulo;
+            flutuante.appendChild(titulo);
+            flutuante.classList.add('so-rotulo');
+        }
+
+        // Alinha pelo topo do ícone e não deixa passar do fim da tela.
+        const r = ancora.getBoundingClientRect();
+        flutuante.style.left = (r.right + 10) + 'px';
+        flutuante.style.top = '0px';
+        const altura = flutuante.offsetHeight;
+        const topo = grupo ? r.top - 8 : r.top + r.height / 2 - altura / 2;
+        flutuante.style.top = Math.max(8, Math.min(topo, window.innerHeight - altura - 8)) + 'px';
+        flutuante.classList.add('visivel');
+    }
+
+    function ligarFlutuante(alvo) {
+        const ancoras = [...alvo.querySelectorAll('.bl-nav > .bl-item, .bl-grupo-linha')];
+        ancoras.forEach(ancora => {
+            ancora.addEventListener('mouseenter', () => mostrarFlutuante(ancora));
+            ancora.addEventListener('mouseleave', agendarEsconder);
+            ancora.addEventListener('focusin', () => mostrarFlutuante(ancora));
+            ancora.addEventListener('focusout', e => {
+                if (!flutuante || !flutuante.contains(e.relatedTarget)) agendarEsconder();
+            });
+        });
+        alvo.querySelector('.bl-nav').addEventListener('scroll', esconderFlutuante, { passive: true });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') esconderFlutuante(); });
     }
 
     /** Notificação discreta — substitui os alert() que travavam a interface. */

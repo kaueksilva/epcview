@@ -60,6 +60,8 @@
 
   @media (max-width: 640px) {
     .v-status, .rotulo-largo { display: none; }
+    .v-topo { gap: .5rem; padding: 0 .5rem; }
+    .v-esq { gap: .3rem; }
   }
 </style>
 </head>
@@ -70,7 +72,7 @@
 
   <main class="conteudo">
     <header class="v-topo">
-      <div class="v-esq">
+      <div class="v-esq" data-menu-movel>
         <a href="lista_dashboards.html" class="v-voltar" title="Voltar aos painéis" aria-label="Voltar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                stroke-linejoin="round" style="width:17px;height:17px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>

@@ -278,6 +278,25 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
    Projetos / setores
    ========================================================================== */
 .projetos { padding: 0 0 110px; }
+.projetos .solucoes-cabeca { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+/* Como um projeto entra na plataforma */
+.etapas { margin-top: 64px; }
+.etapas-titulo { margin: 0 0 24px; font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--grafite); }
+.etapas-lista { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; counter-reset: etapa; }
+.etapas-lista li { position: relative; counter-increment: etapa; padding-top: 22px; border-top: 2px solid var(--border); }
+.etapas-lista li::before {
+    content: '0' counter(etapa); position: absolute; top: -2px; left: 0;
+    padding-top: 20px; width: 48px; border-top: 2px solid var(--primary);
+    font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--primary);
+}
+.etapa-icone {
+    display: grid; place-items: center; width: 44px; height: 44px; margin: 30px 0 16px;
+    border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary);
+}
+.etapa-icone svg { width: 22px; height: 22px; }
+.etapas-lista strong { display: block; font-size: 17px; font-weight: 600; }
+.etapas-lista li > span:last-child { display: block; margin-top: 6px; color: var(--grafite); font-size: 14px; line-height: 1.6; }
 .projetos-grade {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
     margin-top: 44px;
@@ -317,6 +336,7 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
 .sobre { padding: 110px 0; background: var(--surface-soft); }
 .sobre-grade { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
 .sobre-texto p { margin: 22px 0 0; color: var(--grafite); font-size: 16px; }
+.sobre-texto p + p { margin-top: 14px; }
 .diferenciais { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .diferencial {
     background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md);
@@ -335,43 +355,27 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
 .diferencial p { margin: 0; font-size: 14px; color: var(--grafite); line-height: 1.55; }
 
 /* ==========================================================================
-   Contato
+   Contato (faixa final com WhatsApp e e-mail — ver contato.js)
    ========================================================================== */
-.contato { padding: 110px 0; }
-.contato-grade {
-    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0;
-    border-radius: var(--radius-md); overflow: hidden;
-    box-shadow: 0 30px 80px rgba(10, 26, 51, .12);
-    border: 1px solid var(--border);
-}
-.contato-lado {
-    padding: 56px 48px;
+.contato { padding: 0 0 110px; background: var(--surface-soft); }
+.chamada {
+    display: grid; grid-template-columns: minmax(0, 1.3fr) auto; gap: 40px; align-items: center;
+    padding: 56px;
+    border-radius: var(--radius-md);
     color: #fff;
     background:
-        radial-gradient(500px 300px at 0% 100%, rgba(0, 194, 255, .2), transparent 60%),
-        linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%);
+        radial-gradient(520px 300px at 0% 100%, rgba(0, 194, 255, .22), transparent 60%),
+        radial-gradient(420px 260px at 100% 0%, rgba(10, 108, 240, .35), transparent 60%),
+        linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    box-shadow: 0 30px 80px rgba(10, 26, 51, .18);
 }
-.contato-lado .sobretitulo { color: var(--cyan); }
-.contato-lado h2 { margin: 0 0 18px; font-size: clamp(28px, 3vw, 36px); font-weight: 300; line-height: 1.15; letter-spacing: -.02em; }
-.contato-lado p { margin: 0 0 32px; color: rgba(255, 255, 255, .72); }
-.contato-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.contato-lista li { display: flex; gap: 12px; align-items: flex-start; color: rgba(255, 255, 255, .85); font-size: 14px; }
-.contato-lista svg { width: 18px; height: 18px; color: var(--cyan); flex-shrink: 0; margin-top: 2px; }
-
-.formulario { padding: 48px; background: #fff; }
-.form-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
-.form-campo { display: flex; flex-direction: column; gap: 6px; }
-.form-campo.largo { grid-column: 1 / -1; }
-.form-campo label { font-size: 12px; font-weight: 600; color: var(--grafite); }
-.form-campo label em { font-style: normal; color: var(--primary); }
-.form-campo .campo { border-radius: var(--radius-xs); }
-.form-campo textarea.campo { resize: vertical; min-height: 120px; line-height: 1.5; }
-.armadilha { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
-.form-rodape { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
-.form-rodape small { color: var(--text-light); font-size: 12px; max-width: 22rem; }
-.form-status { display: none; margin-top: 18px; padding: 12px 14px; border-radius: var(--radius-xs); font-size: 14px; }
-.form-status.ok { display: block; background: var(--green-soft); color: var(--green-dark); }
-.form-status.erro { display: block; background: var(--red-soft); color: #b3262b; }
+.chamada .sobretitulo { color: var(--cyan); }
+.chamada h2 { margin: 0 0 14px; font-size: clamp(28px, 3.2vw, 40px); font-weight: 300; line-height: 1.15; letter-spacing: -.02em; }
+.chamada p { margin: 0; max-width: 34rem; color: rgba(255, 255, 255, .75); font-size: 16px; }
+.chamada-acoes { display: flex; flex-direction: column; gap: 12px; min-width: 15rem; }
+.chamada-acoes .botao { height: 52px; }
+.chamada-acoes .botao svg { width: 18px; height: 18px; flex-shrink: 0; }
+.chamada-acoes .botao span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ==========================================================================
    Rodapé
@@ -429,6 +433,8 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
     .resultado:first-of-type { margin-left: 0; padding-left: 0; border-left: none; }
     .diferenciais { grid-template-columns: 1fr 1fr; }
     .projetos-grade { grid-template-columns: 1fr 1fr; }
+    .chamada { grid-template-columns: 1fr; padding: 44px 40px; }
+    .chamada-acoes { flex-direction: row; flex-wrap: wrap; }
 }
 
 @media (max-width: 860px) {
@@ -449,7 +455,10 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
     .pilares-grade { grid-template-columns: repeat(3, 1fr); }
     .pilar:nth-child(4) { border-left: none; }
     .pilar:nth-child(n+4) { border-top: 1px solid var(--border); }
-    .plataforma-grade, .sobre-grade, .contato-grade { grid-template-columns: 1fr; }
+    .plataforma-grade, .sobre-grade { grid-template-columns: 1fr; }
+    .projetos .solucoes-cabeca { grid-template-columns: 1fr; gap: 18px; }
+    .etapas-lista { grid-template-columns: 1fr; gap: 8px; }
+    .etapa-icone { margin-top: 28px; }
     .plataforma-texto { padding: 48px 28px 32px; }
     .plataforma-visual { min-height: 0; padding: 28px 20px 40px; }
     .sobre-grade { gap: 40px; }
@@ -471,10 +480,18 @@ body.site { background: #fff; color: var(--navy); font-size: 15px; line-height: 
     .solucoes-cabeca { grid-template-columns: 1fr; gap: 18px; }
     .resultados-grade { grid-template-columns: 1fr; }
     .resultado { margin-left: 0; padding-left: 0; border-left: none; }
-    .diferenciais, .projetos-grade, .form-grade { grid-template-columns: 1fr; }
-    .contato-lado, .formulario { padding: 36px 22px; }
+    .diferenciais, .projetos-grade { grid-template-columns: 1fr; }
+    .chamada { padding: 36px 22px; }
+    /* Diferenciais compactos: ícone ao lado do texto */
+    .diferenciais { gap: 10px; }
+    .diferencial { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; padding: 16px; }
+    .diferencial-icone { grid-row: span 2; margin-bottom: 0; }
+    .diferencial h3 { align-self: end; }
+    .setor { padding: 22px 20px; }
+    .chamada-acoes { flex-direction: column; }
+    .chamada-acoes .botao { width: 100%; }
     .app-mock { font-size: 7px; }
     .am-kpi b { font-size: 11px; }
-    .plataforma, .solucoes, .sobre, .contato { padding-top: 72px; }
+    .plataforma, .solucoes, .sobre { padding-top: 72px; }
     .solucoes, .sobre, .contato, .projetos { padding-bottom: 72px; }
 }

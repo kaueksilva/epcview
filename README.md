@@ -1,11 +1,12 @@
 # EPCVIEW — Engineering Intelligence
 
-Duas partes num só servidor:
+O sistema serve para duas coisas: **subir as planilhas da obra** e **montar
+dashboards sobre elas**. Num só servidor:
 
 - **Site público** em `/` — página institucional (soluções, plataforma,
-  projetos, sobre) com formulário "Solicite uma demonstração". Não exige login.
-- **Painel** (a partir de `/login.html`) — onde administradores montam painéis
-  em JavaScript sobre as planilhas da obra, publicam, e a equipe abre prontos.
+  projetos, sobre). Não exige login.
+- **Painel** (a partir de `/login.html`) — administradores enviam planilhas e
+  montam painéis em JavaScript sobre elas; a equipe abre os painéis prontos.
 
 Derivado do UHNIntegra 2: mesmas funções do painel, com a identidade visual
 EPCVIEW (paleta e tokens em `static/style.css`).
@@ -19,10 +20,12 @@ node server.js
 Sem dependências e sem `npm install` — só Node.js. Painel em
 http://localhost:8000/login.html.
 
-> **O site público está desligado por enquanto.** A raiz `/` leva ao login (ou
-> aos dashboards, com sessão), `/site/` e `/api/contato` respondem 404 e os links
-> "Voltar ao site" / "Ver site público" ficam ocultos. Para religar, defina
-> `SITE_PUBLICO=1` no `.env` (ou no Environment do Render).
+Site público em http://localhost:8000/.
+
+> Para desligar o site público, defina `SITE_PUBLICO=0` no `.env` (ou no
+> Environment do Render): a raiz `/` passa a levar ao login (ou aos dashboards,
+> com sessão), `/site/` responde 404 e os links "Voltar ao site" / "Ver site
+> público" ficam ocultos.
 
 Na primeira execução o sistema cria o usuário `admin` e **imprime a senha no
 console uma única vez**. Anote: ela não é exibida de novo. Não há credencial
@@ -52,15 +55,13 @@ própria — esconder o botão nunca é a única proteção.
 | Editor | `/index.html` | admin |
 | Planilhas | `/planilhas.html` | todos (envio: admin) |
 | Usuários | `/usuarios.html` | admin |
-| Contatos | `/contatos.html` | admin |
-| Dockers | `/dockers.html` | admin |
 
 ## Site público
 
 ```
 static/site/index.html   a página (seções e textos)
 static/site/site.css     estilos próprios do site (usa os tokens de static/style.css)
-static/site/site.js      menu móvel, formulário, vídeo, animações
+static/site/site.js      menu móvel, vídeo, animações
 static/site/img/         fotos — ver LEIA-ME.md com os nomes esperados
 static/site/video/       apresentacao.mp4 (botão "Assista ao vídeo")
 ```
@@ -68,15 +69,6 @@ static/site/video/       apresentacao.mp4 (botão "Assista ao vídeo")
 Sem fotos, o site usa degradês e uma ilustração vetorial — nada quebra. Para usar
 as fotos do designer, basta salvar em `static/site/img/` com os nomes listados em
 `static/site/img/LEIA-ME.md`.
-
-O formulário de contato grava em `data/contatos.json` (fora do git: dados
-pessoais) e aparece na tela **Contatos** do painel. Proteções: validação e
-teto de tamanho por campo, campo-armadilha contra robôs, 5 envios por IP a cada
-10 min e no máximo 5.000 contatos guardados.
-
-> No plano free do Render o disco é efêmero: `data/contatos.json` some a cada
-> deploy/reinício. Leia os contatos com frequência ou ative o Persistent Disk
-> (bloco `disk:` em `render.yaml`).
 
 ## Montando um painel
 
@@ -114,7 +106,6 @@ elemento `#dash-root` onde o painel é renderizado.
 
 ```
 data/database.json   usuários, grupos e painéis publicados
-data/contatos.json   pedidos do formulário do site (fora do git)
 lib/r2.js            cliente do Cloudflare R2 — onde as planilhas moram
 static/              as páginas
 lib/db.js            camada de acesso ao banco
@@ -184,8 +175,7 @@ escreve é o que a equipe recebe. O código nunca é interpolado em string: vai 
 | `GET` | `/api/planilhas` · `/:nome` | autenticado |
 | `POST`/`DELETE` | `/api/planilhas/:nome` | admin |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/usuarios` · `/:id` | admin |
-| `POST` | `/api/contato` | **público** (formulário do site) |
-| `GET` · `PATCH`/`DELETE` | `/api/contatos` · `/:id` | admin |
+| `GET`/`POST`/`PUT`/`DELETE` | `/api/grupos` · `/:id` | admin |
 
 ## Segurança
 
@@ -199,8 +189,5 @@ Dois pontos a considerar antes de expor fora da rede interna:
 
 - **Um painel é código** que roda no navegador de quem o abrir. Só
   administradores publicam, e é por isso que esse papel deve ser restrito.
-- **`/api/contato` é a única escrita sem login.** Tem limites (ver "Site
-  público"), mas o limite por IP confia em `X-Forwarded-For`, que só é
-  confiável atrás de um proxy (como o do Render).
 - **O servidor fala HTTP puro.** Em rede aberta, coloque-o atrás de um proxy
   com TLS — sem HTTPS, a senha trafega em texto claro.

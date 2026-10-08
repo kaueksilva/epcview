@@ -188,7 +188,7 @@
         <select class="campo" id="f-grupo" required>
           <option value="" disabled selected>Selecione um grupo</option>
         </select>
-        <p class="dica">O grupo decide tudo: se é administrador, e se não for, quais páginas, painéis e aplicações vê.</p>
+        <p class="dica">O grupo decide tudo: se é administrador, e se não for, quais páginas e painéis vê.</p>
       </div>
 
       <div class="modal-acoes" style="margin-top:1.1rem">
@@ -236,14 +236,6 @@
           </label>
           <div class="campo-checklist" id="fg-lista-paineis"></div>
         </div>
-
-        <div class="grupo">
-          <span class="rotulo">Aplicações (Dockers)</span>
-          <label class="checklist-item" style="margin-bottom:.4rem">
-            <input type="checkbox" id="fg-todas-apps"> Todas as aplicações, inclusive as cadastradas depois
-          </label>
-          <div class="campo-checklist" id="fg-lista-apps"></div>
-        </div>
       </div>
 
       <div class="modal-acoes" style="margin-top:1.1rem">
@@ -263,7 +255,6 @@
   let usuarios = [];
   let grupos = [];
   let dashboards = [];
-  let apps = [];
   let eu = null;
   let editando = null;          // null = criando
   let editandoGrupo = null;     // null = criando
@@ -474,7 +465,7 @@
   }
 
   // -------------------------------------------------------------------
-  // Grupos — controlam quais páginas, painéis e aplicações um visualizador vê
+  // Grupos — controlam quais páginas e painéis um visualizador vê
   // -------------------------------------------------------------------
   function mostrarAba(aba) {
     $('aba-usuarios').classList.toggle('ativa', aba === 'usuarios');
@@ -490,16 +481,12 @@
     grupos = resp.ok ? await resp.json() : [];
   }
 
-  async function carregarDashboardsEApps() {
+  async function carregarDashboards() {
     try {
-      const [respD, respA] = await Promise.all([
-        fetch('/api/dashboards', { credentials: 'same-origin' }),
-        fetch('/api/dockers', { credentials: 'same-origin' })
-      ]);
-      dashboards = respD.ok ? await respD.json() : [];
-      apps = respA.ok ? await respA.json() : [];
+      const resp = await fetch('/api/dashboards', { credentials: 'same-origin' });
+      dashboards = resp.ok ? await resp.json() : [];
     } catch {
-      dashboards = []; apps = [];
+      dashboards = [];
     }
   }
 
@@ -509,7 +496,7 @@
         '<div class="vazio">' +
           '<div class="vazio-icone">' + UHNUI.icone('<path d="M17 21v-8H7v8M7 3v5h8"/><path d="M12 12v6M9 15h6"/>', 24) + '</div>' +
           '<h3>Nenhum grupo ainda</h3>' +
-          '<p>Crie um grupo para controlar quais páginas, painéis e aplicações cada visualizador enxerga.</p>' +
+          '<p>Crie um grupo para controlar quais páginas e painéis cada visualizador enxerga.</p>' +
         '</div>';
       return;
     }
@@ -537,8 +524,7 @@
           : 'nenhuma';
         tdLibera.innerHTML =
           '<div class="gr-resumo-linha"><strong>Páginas:</strong> ' + UHNUI.escapar(paginasTxt) + '</div>' +
-          '<div class="gr-resumo-linha"><strong>Painéis:</strong> ' + resumoLista(g.dashboards, dashboards.length, 'painéis', 'Todos os painéis', 'nenhum') + '</div>' +
-          '<div class="gr-resumo-linha"><strong>Aplicações:</strong> ' + resumoLista(g.aplicacoes, apps.length, 'aplicações', 'Todas as aplicações', 'nenhuma') + '</div>';
+          '<div class="gr-resumo-linha"><strong>Painéis:</strong> ' + resumoLista(g.dashboards, dashboards.length, 'painéis', 'Todos os painéis', 'nenhum') + '</div>';
       }
 
       const tdUsuarios = document.createElement('td');
@@ -589,7 +575,7 @@
     return [...$(containerId).querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
   }
 
-  /** O grupo admin não usa páginas/painéis/aplicações — some (e desabilita) essa parte do formulário. */
+  /** O grupo admin não usa páginas/painéis — some (e desabilita) essa parte do formulário. */
   function alternarRestricoesGrupo() {
     const ehAdmin = $('fg-admin').checked;
     $('fg-restricoes').style.display = ehAdmin ? 'none' : 'block';
@@ -610,11 +596,6 @@
     preencherChecklist('fg-lista-paineis', dashboards, d => d.titulo || 'Sem título', d => d.id,
       g && Array.isArray(g.dashboards) ? g.dashboards : [], todosPaineis);
 
-    const todasApps = g ? g.aplicacoes === 'todos' : false;
-    $('fg-todas-apps').checked = todasApps;
-    preencherChecklist('fg-lista-apps', apps, a => a.titulo, a => a.id,
-      g && Array.isArray(g.aplicacoes) ? g.aplicacoes : [], todasApps);
-
     $('modal-grupo').style.display = 'grid';
     $('fg-nome').focus();
   }
@@ -630,8 +611,7 @@
       nome: $('fg-nome').value.trim(),
       admin: $('fg-admin').checked,
       paginas: [...document.querySelectorAll('.fg-pagina:checked')].map(cb => cb.value),
-      dashboards: $('fg-todos-paineis').checked ? 'todos' : coletarChecklist('fg-lista-paineis'),
-      aplicacoes: $('fg-todas-apps').checked ? 'todos' : coletarChecklist('fg-lista-apps')
+      dashboards: $('fg-todos-paineis').checked ? 'todos' : coletarChecklist('fg-lista-paineis')
     };
 
     try {
@@ -709,12 +689,9 @@
     $('fg-todos-paineis').addEventListener('change', () => {
       $('fg-lista-paineis').querySelectorAll('input').forEach(cb => cb.disabled = $('fg-todos-paineis').checked);
     });
-    $('fg-todas-apps').addEventListener('change', () => {
-      $('fg-lista-apps').querySelectorAll('input').forEach(cb => cb.disabled = $('fg-todas-apps').checked);
-    });
 
     await carregarGrupos();
-    await carregarDashboardsEApps();
+    await carregarDashboards();
     desenharGrupos();
     carregar();
   })();

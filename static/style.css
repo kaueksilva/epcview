@@ -334,7 +334,9 @@ body {
     position: relative;
 }
 
+.bl-topo { display: flex; align-items: center; padding-right: var(--space-3); }
 .bl-marca {
+    flex: 1; min-width: 0;
     display: flex;
     align-items: center;
     padding: var(--space-6) var(--space-5) var(--space-5);
@@ -401,11 +403,22 @@ body.lateral-recolhida .bl-site span { display: none; }
 span.bl-grupo-rotulo { cursor: default; }
 span.bl-grupo-rotulo:hover { background: none; color: rgba(255, 255, 255, .78); }
 
+/* Quantos painéis há no grupo, à direita do rótulo */
+.bl-contagem {
+    margin-left: auto;
+    min-width: 22px; padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, .1);
+    font-size: var(--text-xs); font-weight: 700; text-align: center;
+    color: rgba(255, 255, 255, .7);
+}
+.bl-item.ativo .bl-contagem { background: rgba(0, 194, 255, .2); color: #fff; }
+
 .bl-seta-btn {
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
     width: 30px; height: 30px;
-    margin-right: var(--space-2);
+    margin-right: var(--space-1);
     border: none; border-radius: var(--radius-xs);
     background: none; color: rgba(255, 255, 255, .55);
     cursor: pointer;
@@ -415,38 +428,90 @@ span.bl-grupo-rotulo:hover { background: none; color: rgba(255, 255, 255, .78); 
 .bl-seta-btn svg { transition: transform var(--transition-fast); }
 .bl-grupo.aberto .bl-seta-btn svg { transform: rotate(90deg); }
 
+/* A lista abre/fecha animando a altura (grid 0fr -> 1fr). Fechada, ela fica
+   invisível de verdade: sem espaçamento interno que vaze para baixo do
+   "Dashboards" (antes sobrava uma faixa onde o mouse pegava o 1º painel) e
+   fora da navegação por teclado. */
 .bl-sub {
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows var(--transition);
 }
 .bl-sub-inner {
+    min-height: 0;
     overflow: hidden;
-    padding: 2px 0 var(--space-2) 2.8rem;
+    visibility: hidden;
+    transition: visibility 0s linear .3s;
 }
 .bl-grupo.aberto .bl-sub { grid-template-rows: 1fr; }
+.bl-grupo.aberto .bl-sub-inner { visibility: visible; transition-delay: 0s; }
+
+/* Trilho vertical ligando os painéis ao ícone do grupo */
+.bl-sub-lista {
+    margin: 2px 0 var(--space-2) 25px;
+    padding: 2px 0 2px var(--space-3);
+    border-left: 1px solid rgba(255, 255, 255, .12);
+    max-height: 42vh; overflow-y: auto;
+}
 
 .bl-sub-item {
+    position: relative;
     display: block;
     margin-bottom: 1px;
-    padding: var(--space-2) var(--space-3);
+    padding: 7px var(--space-3);
     border-radius: var(--radius-xs);
-    font-size: var(--text-sm);
+    font-size: 13px;
     font-weight: 500;
-    color: rgba(255, 255, 255, .6);
+    color: rgba(255, 255, 255, .62);
     text-decoration: none;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transition: background var(--transition-fast), color var(--transition-fast);
 }
-.bl-sub-item:hover { background: rgba(255, 255, 255, .08); color: #fff; }
-.bl-sub-item.ativo {
-    background: rgba(10, 108, 240, .3); color: #fff; font-weight: 600;
-    box-shadow: inset 2px 0 0 var(--cyan);
+.bl-sub-item:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.bl-sub-item.ativo { background: rgba(10, 108, 240, .28); color: #fff; font-weight: 600; }
+/* O trecho do trilho na altura do painel aberto acende em ciano */
+.bl-sub-item.ativo::before {
+    content: ''; position: absolute;
+    left: 0; top: 6px; bottom: 6px; width: 2px;
+    border-radius: 2px; background: var(--cyan);
 }
 .bl-sub-vazio {
     margin: 0; padding: var(--space-2) var(--space-3);
     font-size: var(--text-sm); font-style: italic; color: rgba(255, 255, 255, .4);
 }
+
+/* Painel flutuante da lateral recolhida ---------------------------------------
+   Nome do item ao passar o mouse e, em "Dashboards", a lista de painéis.
+   Fica no <body> com position: fixed (ui.js posiciona) porque a navegação tem
+   rolagem própria e cortaria qualquer coisa que saísse dela. */
+.bl-flutuante {
+    position: fixed; z-index: 500;
+    min-width: 200px; max-width: 280px;
+    padding: var(--space-2);
+    background: var(--navy-2);
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    color: #fff;
+    opacity: 0; transform: translateX(-4px);
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+.bl-flutuante.visivel { opacity: 1; transform: none; pointer-events: auto; }
+.bl-flutuante-titulo {
+    display: block;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm); font-weight: 700; white-space: nowrap;
+}
+a.bl-flutuante-titulo { color: #fff; text-decoration: none; border-radius: var(--radius-xs); }
+a.bl-flutuante-titulo:hover { background: rgba(255, 255, 255, .08); }
+.bl-flutuante.so-rotulo { min-width: 0; padding: var(--space-1); }
+.bl-flutuante .bl-sub-lista {
+    margin: var(--space-1) 0 0; padding: var(--space-1) 0 0;
+    border-left: none; border-top: 1px solid rgba(255, 255, 255, .1);
+    max-height: 60vh;
+}
+.bl-flutuante .bl-sub-item.ativo::before { display: none; }
 
 .bl-recolher {
     display: flex;
@@ -499,7 +564,9 @@ span.bl-grupo-rotulo:hover { background: none; color: rgba(255, 255, 255, .78); 
 body.lateral-recolhida .barra-lateral { width: var(--sidebar-width-collapsed); }
 body.lateral-recolhida .bl-item span,
 body.lateral-recolhida .bl-usuario-info,
-body.lateral-recolhida .bl-recolher span { display: none; }
+body.lateral-recolhida .bl-recolher span,
+body.lateral-recolhida .bl-contagem { display: none; }
+body.lateral-recolhida .bl-topo { padding-right: 0; }
 body.lateral-recolhida .bl-marca { justify-content: center; padding: var(--space-6) var(--space-2) var(--space-5); }
 body.lateral-recolhida .bl-marca-logo { display: none; }
 body.lateral-recolhida .bl-marca-icone { display: block; }
@@ -512,29 +579,6 @@ body.lateral-recolhida .bl-recolher { margin: 0 var(--space-2) var(--space-3); }
 body.lateral-recolhida .bl-recolher svg { transform: rotate(180deg); }
 body.lateral-recolhida .bl-seta-btn,
 body.lateral-recolhida .bl-sub { display: none; }
-
-/* Dica ao passar o mouse na versão recolhida */
-body.lateral-recolhida .bl-item { position: relative; }
-body.lateral-recolhida .bl-item::after {
-    content: attr(data-rotulo);
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%) scale(.9);
-    background: var(--text);
-    color: #fff;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-xs);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
-    z-index: 60;
-    box-shadow: var(--shadow-md);
-}
-body.lateral-recolhida .bl-item:hover::after { opacity: 1; transform: translateY(-50%) scale(1); }
 
 /* Conteúdo ----------------------------------------------------------------- */
 
@@ -638,9 +682,27 @@ body.lateral-recolhida .bl-item:hover::after { opacity: 1; transform: translateY
 
 /* Responsivo --------------------------------------------------------------- */
 
-@media (max-width: 900px) {
+/* Barra superior do celular: botão do menu + logo. Só aparece até 768px,
+   quando a barra lateral vira gaveta (ui.js monta as duas). */
+.barra-movel { display: none; }
+.bl-fundo { display: none; }
+.bl-menu-btn {
+    display: none; place-items: center; flex-shrink: 0;
+    width: 40px; height: 40px;
+    border: none; border-radius: var(--radius-sm);
+    background: none; color: inherit; cursor: pointer;
+}
+.bl-menu-btn:hover { background: rgba(255, 255, 255, .1); }
+.bl-fechar { display: none; }
+
+/* Modais e tabelas cabem em qualquer tela */
+.modal { max-height: calc(100dvh - 2 * var(--space-5)); overflow-y: auto; }
+
+/* Tablet estreito: barra lateral só com ícones */
+@media (min-width: 769px) and (max-width: 900px) {
     .barra-lateral { width: var(--sidebar-width-collapsed); }
-    .bl-item span, .bl-usuario-info, .bl-recolher span { display: none; }
+    .bl-item span, .bl-usuario-info, .bl-recolher span, .bl-contagem { display: none; }
+    .bl-topo { padding-right: 0; }
     .bl-marca { justify-content: center; padding: var(--space-6) var(--space-2) var(--space-5); }
     .bl-marca-logo { display: none; }
     .bl-marca-icone { display: block; }
@@ -648,7 +710,78 @@ body.lateral-recolhida .bl-item:hover::after { opacity: 1; transform: translateY
     .bl-usuario { justify-content: center; padding: var(--space-4) var(--space-2); }
     .bl-sair { display: none; }
     .bl-seta-btn, .bl-sub { display: none; }
+    .bl-secao { visibility: hidden; height: 1px; margin: var(--space-2) 0; overflow: hidden; }
+    .bl-site { justify-content: center; margin: 0 var(--space-2) var(--space-2); }
+    .bl-site span { display: none; }
+}
+
+@media (max-width: 900px) {
     .corpo { padding: var(--space-4); }
     .topo { padding: var(--space-4); }
     .topo h1 { font-size: var(--text-xl); }
+}
+
+/* Celular e tablet em pé: a barra lateral sai do fluxo e vira gaveta,
+   aberta pelo botão da barra superior. */
+@media (max-width: 768px) {
+    .app { height: 100dvh; }
+
+    .barra-lateral {
+        position: fixed; top: 0; bottom: 0; left: 0; z-index: 300;
+        width: min(var(--sidebar-width), 86vw);
+        transform: translateX(-100%);
+        transition: transform var(--transition);
+        box-shadow: none;
+    }
+    body.menu-aberto .barra-lateral { transform: none; box-shadow: var(--shadow-xl); }
+    .bl-fundo {
+        display: block; position: fixed; inset: 0; z-index: 290;
+        background: rgba(10, 26, 51, .55);
+        opacity: 0; pointer-events: none;
+        transition: opacity var(--transition);
+    }
+    body.menu-aberto .bl-fundo { opacity: 1; pointer-events: auto; }
+    body.menu-aberto { overflow: hidden; }
+
+    .bl-fechar {
+        display: grid; place-items: center;
+        margin-left: auto; width: 36px; height: 36px;
+        border: none; border-radius: var(--radius-sm);
+        background: none; color: rgba(255, 255, 255, .7); cursor: pointer;
+    }
+    .bl-fechar:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+    .bl-marca { padding: var(--space-5) var(--space-4) var(--space-4) var(--space-5); }
+    .bl-marca-logo { font-size: 24px; }
+    .bl-recolher { display: none; }
+    .bl-item:hover { transform: none; }
+
+    .barra-movel {
+        display: flex; align-items: center; gap: var(--space-2);
+        height: 52px; padding: 0 var(--space-2);
+        flex-shrink: 0;
+        background: linear-gradient(90deg, var(--navy), var(--navy-2));
+        color: #fff;
+    }
+    .barra-movel .logo-epc { font-size: 19px; }
+    .bl-menu-btn { display: grid; }
+
+    .topo { gap: var(--space-3); }
+    .topo > div { min-width: 0; }
+    /* Grupos de botões do topo quebram linha em vez de sair da tela */
+    .topo > div:last-child:not(:first-child) { flex-wrap: wrap; }
+
+    /* Tabelas dentro de cartões rolam de lado em vez de cortar colunas */
+    .cartao:has(> table) { overflow-x: auto !important; }
+    .cartao > table th, .cartao > table td { white-space: nowrap; }
+
+    .pilha-avisos { left: var(--space-4); right: var(--space-4); bottom: var(--space-4); align-items: stretch; }
+    .aviso { max-width: none; }
+}
+
+@media (max-width: 480px) {
+    .corpo { padding: var(--space-3); }
+    .topo { padding: var(--space-3) var(--space-4); }
+    .modal { padding: var(--space-5); }
+    .modal-acoes { flex-wrap: wrap; }
+    .modal-acoes .btn { flex: 1 1 auto; }
 }

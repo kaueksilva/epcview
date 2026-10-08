@@ -12,79 +12,232 @@
 <link rel="stylesheet" href="style.css">
 
 <style>
-  .pl-layout { display: flex; gap: 1rem; height: 100%; min-height: 0; }
-  .pl-lista { width: 21rem; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
-  .pl-itens { flex: 1; overflow-y: auto; padding: .4rem; }
+  /* Layout: lista à esquerda, planilha aberta à direita. minmax(0, 1fr)
+     impede que uma tabela larga empurre o cartão para fora da tela. */
+  .pl-layout {
+    display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: var(--space-5);
+    width: 100%; height: 100%; min-height: 0;
+    transition: grid-template-columns var(--transition);
+  }
+  .pl-layout.focado { grid-template-columns: 15rem minmax(0, 1fr); }
+
+  /* Indicadores do topo da página */
+  .pl-resumo { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+  .pl-resumo-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: var(--radius-full);
+    background: var(--surface-soft); border: 1px solid var(--border);
+    font-size: var(--text-sm); color: var(--text-muted);
+  }
+  .pl-resumo-item b { color: var(--text); font-weight: 700; }
+
+  /* Lista ------------------------------------------------------------------ */
+  .pl-lista { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .pl-lista-topo {
+    display: flex; flex-direction: column; gap: var(--space-2);
+    padding: var(--space-3); border-bottom: 1px solid var(--border);
+  }
+  .pl-busca { position: relative; }
+  .pl-busca svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none; }
+  .pl-busca .campo { padding: 9px 12px 9px 36px; font-size: var(--text-base); }
+  .pl-lista-linha { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .pl-contagem { font-size: var(--text-xs); font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; }
+  .pl-ordem {
+    height: 28px; padding: 0 26px 0 8px;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-xs);
+    background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 6px center / 14px;
+    font-family: inherit; font-size: var(--text-sm); color: var(--text); cursor: pointer;
+    appearance: none;
+  }
+
+  .pl-itens { flex: 1; overflow-y: auto; padding: var(--space-2); }
 
   .pl-item {
-    display: flex; align-items: center; gap: .6rem;
+    position: relative;
+    display: flex; align-items: center; gap: var(--space-3);
     width: 100%; text-align: left;
-    padding: .55rem .6rem;
-    border: 1px solid transparent; border-radius: 9px;
-    background: none; cursor: pointer;
-    transition: background var(--transicao), border-color var(--transicao);
+    padding: 10px var(--space-3);
+    border: 1px solid transparent; border-radius: var(--radius-md);
+    background: none; cursor: pointer; font-family: inherit;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
   }
-  .pl-item:hover { background: var(--superficie-2); }
-  .pl-item.ativa { background: var(--azul-100); border-color: var(--azul-300); }
+  .pl-item + .pl-item { margin-top: 2px; }
+  .pl-item:hover { background: var(--surface-soft); }
+  .pl-item.ativa { background: var(--primary-soft); border-color: rgba(10, 108, 240, .25); }
+  .pl-item.ativa::before {
+    content: ''; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px;
+    border-radius: 0 3px 3px 0; background: var(--primary);
+  }
 
-  .pl-icone {
-    width: 30px; height: 30px; flex-shrink: 0;
-    border-radius: 8px; background: #e9f3ee; color: var(--ok);
+  /* Selo do tipo de arquivo (XLSX, CSV...) */
+  .pl-tipo {
+    width: 38px; height: 38px; flex-shrink: 0;
     display: grid; place-items: center;
+    border-radius: var(--radius-sm);
+    background: var(--green-soft); color: var(--green-dark);
+    font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
   }
+  .pl-tipo.csv { background: #e6f4fb; color: #0b6a94; }
+  .pl-tipo.outro { background: var(--surface-soft); color: var(--text-muted); }
+
   .pl-texto { min-width: 0; flex: 1; }
-  .pl-apelido { font-size: .76rem; font-weight: 700; }
-  .pl-nome { font-size: .65rem; color: var(--texto-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .pl-detalhe { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
-
-  /* Modo foco -------------------------------------------------------------
-     Ao abrir uma planilha, a lista encolhe e a tabela ocupa o espaço. Quem
-     está lendo 200 linhas de dados não precisa da lista de arquivos ao lado. */
-  .pl-layout.focado .pl-lista { width: 13rem; }
-  .pl-layout.focado .pl-nome { display: none; }
-  .pl-layout.focado .pl-item { padding: .4rem .5rem; }
-  .pl-lista { transition: width var(--transition); }
-
-  .pl-foco-btn {
-    display: inline-flex; align-items: center; gap: var(--space-2);
-    height: 32px; padding: 0 var(--space-3);
-    background: transparent; border: 1px solid var(--border-strong);
-    border-radius: var(--radius-xs);
-    color: var(--text-muted); font-family: inherit; font-size: var(--text-sm); font-weight: 600;
-    cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast);
+  .pl-linha1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .pl-apelido {
+    flex-shrink: 0;
+    padding: 1px 6px; border-radius: var(--radius-xs);
+    background: var(--navy); color: #fff;
+    font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
   }
-  .pl-foco-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-light); }
+  .pl-nome {
+    min-width: 0; font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pl-meta { margin-top: 3px; font-size: var(--text-xs); color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Cabeçalho da planilha aberta: identidade clara do que se está lendo */
+  .pl-layout.focado .pl-meta, .pl-layout.focado .pl-tipo { display: none; }
+
+  .pl-vazio-lista { padding: 2.5rem 1rem; text-align: center; font-size: var(--text-sm); color: var(--text-light); }
+
+  /* Zona de envio */
+  .zona-envio {
+    display: flex; align-items: center; gap: var(--space-3);
+    margin: var(--space-3) var(--space-3) 0;
+    padding: var(--space-3);
+    border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md);
+    font-size: var(--text-sm); color: var(--text-muted);
+    cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast);
+  }
+  .zona-envio:hover, .zona-envio.arrastando { border-color: var(--primary); background: var(--primary-soft); }
+  .zona-envio[hidden] { display: none; }
+  .zona-icone {
+    width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center;
+    border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary);
+  }
+  .zona-envio strong { color: var(--primary); font-weight: 600; }
+  .zona-envio small { display: block; margin-top: 1px; font-size: var(--text-xs); color: var(--text-light); }
+
+  .pl-check {
+    width: 18px; height: 18px; flex-shrink: 0;
+    border: 1.5px solid var(--border-strong); border-radius: 5px;
+    display: grid; place-items: center;
+    background: var(--surface); color: transparent;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  }
+  .pl-check:hover { border-color: var(--primary); }
+  .pl-item.marcada .pl-check { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .pl-item.marcada { background: var(--primary-soft); }
+
+  .pl-barra-sel {
+    display: none; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+    padding: var(--space-2) var(--space-3);
+    background: var(--navy); color: #fff;
+  }
+  .pl-barra-sel.ativa { display: flex; }
+  .pl-barra-sel span { font-size: var(--text-sm); font-weight: 600; flex: 1; }
+  .pl-barra-sel .btn { height: 30px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+  .pl-barra-sel .btn-contorno { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .3); }
+  .pl-barra-sel .btn-contorno:hover:not(:disabled) { background: rgba(255, 255, 255, .1); border-color: #fff; }
+  .pl-barra-sel .btn-excluir { background: var(--red); color: #fff; }
+  .pl-barra-sel .btn-excluir:hover:not(:disabled) { background: #c93338; }
+
+  /* Planilha aberta -------------------------------------------------------- */
+  .pl-detalhe { display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
+
   .pl-detalhe-topo {
-    background: linear-gradient(135deg, var(--primary-soft) 0%, var(--surface) 70%);
+    display: flex; flex-direction: column; gap: var(--space-4);
+    padding: var(--space-5);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--primary-soft) 0%, var(--surface) 60%);
+    flex-shrink: 0;
   }
-  .pl-chip-apelido {
-    display: inline-flex; align-items: center;
-    padding: 2px var(--space-3);
-    background: var(--primary); color: #fff;
-    border-radius: var(--radius-xs);
-    font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600;
-    margin-right: var(--space-2);
+  .pl-detalhe-topo[hidden] { display: none; }
+  .pl-cab { display: flex; align-items: flex-start; gap: var(--space-4); }
+  .pl-cab .pl-tipo { width: 46px; height: 46px; font-size: 11px; border-radius: var(--radius-md); }
+  .pl-cab-texto { flex: 1; min-width: 0; }
+  .pl-cab-texto h3 {
+    margin: 0; font-size: var(--text-lg); font-weight: 700; line-height: 1.3;
+    overflow-wrap: anywhere;
   }
-  .pl-metricas { display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-2); }
-  .pl-metrica { display: flex; flex-direction: column; }
-  .pl-metrica b { font-size: var(--text-lg); font-weight: 700; color: var(--text); line-height: 1.1; }
-  .pl-metrica span { font-size: var(--text-xs); color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+  .pl-cab-texto p { margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-muted); }
+  .pl-cab-acoes { display: flex; gap: var(--space-2); flex-shrink: 0; }
+  .pl-acao {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 var(--space-3);
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    color: var(--text-muted); font-family: inherit; font-size: var(--text-sm); font-weight: 600;
+    cursor: pointer; transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  }
+  .pl-acao:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-light); }
+  .pl-acao[hidden] { display: none; }
+  .pl-acao-perigo:hover { background: var(--red-soft); color: var(--red); border-color: rgba(229, 72, 77, .4); }
 
-  /* Zebra e cabeçalho fixo tornam 200 linhas legíveis */
-  table.dados tbody tr:hover { background: var(--primary-soft); }
-  table.dados tbody tr:hover td { color: var(--text); }
-  table.dados td:first-child, table.dados th:first-child {
-    position: sticky; left: 0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    font-weight: 600;
+  .pl-metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); }
+  .pl-metrica {
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
   }
-  table.dados th:first-child { background: var(--primary); z-index: 3; }
-  table.dados tbody tr:nth-child(even) td:first-child { background: var(--surface-soft); }
-  table.dados tbody tr:hover td:first-child { background: var(--primary-soft); }
+  .pl-metrica span { display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; }
+  .pl-metrica b { display: block; margin-top: 4px; font-size: var(--text-xl); font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .pl-metrica.carregando b { color: var(--text-light); font-weight: 500; font-size: var(--text-base); }
+
+  /* "Usar no editor": o elo entre a planilha e os dashboards */
+  .pl-uso {
+    display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+    background: var(--navy); border-radius: var(--radius-md);
+    color: rgba(255, 255, 255, .65); font-size: var(--text-sm);
+  }
+  .pl-uso[hidden] { display: none; }
+  .pl-uso code { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; color: var(--cyan); overflow-wrap: anywhere; }
+  .pl-uso button {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 var(--space-3);
+    border: none; border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, .1); color: #fff;
+    font-family: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer;
+  }
+  .pl-uso button:hover { background: rgba(255, 255, 255, .2); }
+
+  /* Busca nas linhas */
+  .pl-tabela-barra {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .pl-tabela-barra[hidden] { display: none; }
+  .pl-tabela-barra .pl-busca { flex: 1; max-width: 22rem; }
+  .pl-tabela-barra .campo { padding-top: 7px; padding-bottom: 7px; font-size: var(--text-sm); }
+  .pl-tabela-barra span { font-size: var(--text-sm); color: var(--text-light); white-space: nowrap; }
+
+  .pl-tabela { flex: 1; overflow: auto; min-height: 0; }
+  .pl-tabela[hidden] { display: none; }
+
+  table.dados { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+  table.dados th {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--surface-soft); color: var(--text-muted);
+    border-bottom: 1px solid var(--border-strong);
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    text-align: left; padding: 9px 12px; white-space: nowrap;
+  }
+  table.dados td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text);
+    max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  table.dados td.vazio-celula { color: var(--text-light); }
+  table.dados tbody tr:hover td { background: var(--primary-soft); }
+
+  /* Coluna de numeração, fixa à esquerda ao rolar de lado */
+  table.dados .pl-num {
+    position: sticky; left: 0; z-index: 1;
+    width: 1%; min-width: 3rem; text-align: right;
+    background: var(--surface); color: var(--text-light);
+    font-family: var(--font-mono); font-size: 11px;
+    border-right: 1px solid var(--border);
+  }
+  table.dados th.pl-num { z-index: 3; background: var(--surface-soft); }
+  table.dados tbody tr:hover td.pl-num { background: var(--primary-soft); }
 
   .pl-tabela-rodape {
     padding: var(--space-2) var(--space-4);
@@ -93,51 +246,20 @@
     font-size: var(--text-xs); color: var(--text-light);
     flex-shrink: 0;
   }
-  .pl-detalhe-topo {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    padding: .85rem 1rem; border-bottom: 1px solid var(--borda); flex-shrink: 0;
-  }
-  .pl-tabela { flex: 1; overflow: auto; }
 
-  table.dados { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .72rem; }
-  table.dados th {
-    position: sticky; top: 0; z-index: 2;
-    background: var(--azul-800); color: #fff;
-    font-weight: 600; text-align: left; padding: .5rem .6rem; white-space: nowrap;
-    font-family: 'JetBrains Mono', monospace; font-size: .67rem;
+  /* Estado inicial, sem planilha aberta */
+  .pl-inicio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-10) var(--space-6); text-align: center; }
+  .pl-inicio h3 { margin: 0 0 var(--space-2); font-size: var(--text-xl); font-weight: 700; }
+  .pl-inicio > p { margin: 0; max-width: 28rem; font-size: var(--text-base); color: var(--text-muted); line-height: 1.6; }
+  .pl-passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-8); width: 100%; max-width: 40rem; }
+  .pl-passo { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-soft); text-align: left; }
+  .pl-passo b {
+    display: grid; place-items: center; width: 24px; height: 24px; margin-bottom: var(--space-2);
+    border-radius: 50%; background: var(--primary); color: #fff; font-size: var(--text-sm);
   }
-  table.dados td {
-    padding: .45rem .6rem; border-bottom: 1px solid var(--borda); color: var(--texto-2);
-    max-width: 17rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  table.dados tbody tr:nth-child(even) { background: var(--superficie-2); }
-
-  .zona-envio {
-    border: 1.5px dashed var(--borda-forte); border-radius: var(--raio);
-    padding: .8rem; margin: .5rem;
-    text-align: center; font-size: .75rem; color: var(--texto-2);
-    cursor: pointer; transition: border-color var(--transicao), background var(--transicao);
-  }
-  .zona-envio:hover, .zona-envio.arrastando { border-color: var(--azul-500); background: var(--azul-100); }
-
-  .pl-check {
-    width: 17px; height: 17px; flex-shrink: 0;
-    border: 1.5px solid var(--borda-forte); border-radius: 5px;
-    display: grid; place-items: center;
-    background: var(--superficie); color: transparent;
-    transition: background var(--transicao), border-color var(--transicao), color var(--transicao);
-  }
-  .pl-item.marcada .pl-check { background: var(--azul-600); border-color: var(--azul-600); color: #fff; }
-  .pl-item.marcada { background: var(--azul-100); }
-
-  .pl-barra-sel {
-    display: none; align-items: center; gap: .5rem; flex-wrap: wrap;
-    padding: .5rem .7rem;
-    background: var(--azul-100); border-bottom: 1px solid var(--borda);
-  }
-  .pl-barra-sel.ativa { display: flex; }
-  .pl-barra-sel span { font-size: .73rem; font-weight: 700; color: var(--azul-700); }
-  .pl-barra-sel .btn { height: 1.8rem; font-size: .72rem; }
+  .pl-passo strong { display: block; font-size: var(--text-base); }
+  .pl-passo span { display: block; margin-top: 2px; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }
+  .pl-passo code { font-family: var(--font-mono); font-size: 12px; color: var(--primary); }
 
   /* Painel de envio ------------------------------------------------------ */
   .env-fundo {
@@ -230,9 +352,28 @@
   @keyframes env-entrar { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
   .env-concluido { animation: env-entrar .3s cubic-bezier(.34, 1.56, .64, 1) both; }
 
+  @media (max-width: 1100px) {
+    .pl-layout, .pl-layout.focado { grid-template-columns: 18rem minmax(0, 1fr); }
+    .pl-passos { grid-template-columns: 1fr; max-width: 24rem; }
+  }
   @media (max-width: 900px) {
-    .pl-layout { flex-direction: column; }
-    .pl-lista { width: 100%; height: 42%; }
+    .pl-layout, .pl-layout.focado { grid-template-columns: minmax(0, 1fr); grid-template-rows: 42% minmax(0, 1fr); }
+    .pl-layout.focado { grid-template-rows: 26% minmax(0, 1fr); }
+  }
+  @media (max-width: 768px) {
+    /* No celular a página rola inteira: lista e planilha ganham altura própria */
+    .corpo { display: block !important; }
+    .pl-layout, .pl-layout.focado { height: auto; grid-template-rows: 46dvh 82dvh; }
+    .pl-layout.focado { grid-template-rows: 30dvh 82dvh; }
+    .pl-detalhe-topo { padding: var(--space-4); gap: var(--space-3); }
+    .pl-cab { flex-wrap: wrap; }
+    .pl-cab-acoes { width: 100%; }
+    .pl-cab-acoes .pl-acao { flex: 1; justify-content: center; }
+    .pl-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .pl-metrica { padding: var(--space-2) var(--space-3); }
+    .pl-metrica b { font-size: var(--text-lg); }
+    .pl-inicio { padding: var(--space-6) var(--space-4); }
+    .pl-passos { margin-top: var(--space-5); }
   }
 </style>
 </head>
@@ -246,11 +387,12 @@
       <div>
         <h1>Planilhas</h1>
         <p id="resumo">Carregando...</p>
+        <div class="pl-resumo" id="resumo-itens" hidden></div>
       </div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <input type="file" id="arquivo" accept=".xlsx,.xlsm,.xlsb,.xls,.xlt,.xltx,.xltm,.csv,.tsv,.txt,.ods,.fods,.dif,.prn,.dbf,.xml" multiple hidden>
         <button class="btn btn-contorno" id="btn-sel-todas" hidden>Selecionar todas</button>
-      <button class="btn btn-primario" id="btn-enviar" hidden>
+        <button class="btn btn-primario" id="btn-enviar" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                stroke-linejoin="round" style="width:15px;height:15px">
             <path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
@@ -264,54 +406,103 @@
       <div class="pl-layout">
 
         <div class="cartao pl-lista">
-          <div style="padding:.6rem .7rem;border-bottom:1px solid var(--borda)">
-            <input class="campo" id="busca" type="search" placeholder="Filtrar planilhas..." style="font-size:.78rem">
-          </div>
           <div class="pl-barra-sel" id="barra-sel">
             <span id="sel-contagem"></span>
-            <div style="flex:1"></div>
             <button class="btn btn-contorno" id="btn-limpar-sel">Limpar</button>
-            <button class="btn" id="btn-excluir-sel"
-                    style="background:var(--erro);color:#fff">Excluir selecionadas</button>
+            <button class="btn btn-excluir" id="btn-excluir-sel">Excluir selecionadas</button>
+          </div>
+
+          <div class="pl-lista-topo">
+            <div class="pl-busca">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   style="width:15px;height:15px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input class="campo" id="busca" type="search" placeholder="Buscar por nome ou apelido" aria-label="Buscar planilha">
+            </div>
+            <div class="pl-lista-linha">
+              <span class="pl-contagem" id="lista-contagem"></span>
+              <select class="pl-ordem" id="ordem" aria-label="Ordenar planilhas">
+                <option value="nome">Nome</option>
+                <option value="recentes">Mais recentes</option>
+                <option value="tamanho">Maiores</option>
+              </select>
+            </div>
           </div>
 
           <div class="zona-envio" id="zona" hidden>
-            Arraste arquivos aqui ou <strong>clique para escolher</strong><br>
-            <span style="font-size:.68rem;color:var(--texto-3)">xlsx, xls, xlsm, csv, ods e outros</span>
+            <span class="zona-icone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round" style="width:16px;height:16px">
+                <path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+              </svg>
+            </span>
+            <span>Arraste arquivos aqui ou <strong>escolha no computador</strong>
+              <small>xlsx, xls, xlsm, csv, ods e outros</small></span>
           </div>
           <div class="pl-itens" id="itens"></div>
         </div>
 
         <div class="cartao pl-detalhe">
-          <div class="vazio" id="detalhe-vazio" style="flex:1">
+          <div class="pl-inicio" id="detalhe-vazio">
             <div class="vazio-icone">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-                   stroke-linejoin="round" style="width:22px;height:22px">
+                   stroke-linejoin="round" style="width:24px;height:24px">
                 <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>
               </svg>
             </div>
             <h3>Selecione uma planilha</h3>
-            <p>As colunas aparecem já normalizadas — os mesmos nomes que você usa no código dos painéis.</p>
+            <p>Confira as colunas e os dados antes de montar um painel. Os nomes das colunas já aparecem normalizados, do jeito que o código lê.</p>
+            <div class="pl-passos">
+              <div class="pl-passo"><b>1</b><strong>Envie</strong><span>Suba a planilha da obra em xlsx, csv ou ods.</span></div>
+              <div class="pl-passo"><b>2</b><strong>Confira</strong><span>Abra aqui e veja colunas e linhas.</span></div>
+              <div class="pl-passo"><b>3</b><strong>Monte o painel</strong><span>No Editor, use <code>dados.P21</code> para ler a planilha.</span></div>
+            </div>
           </div>
 
           <div class="pl-detalhe-topo" id="detalhe-topo" hidden>
-            <div style="min-width:0">
-              <h3 id="detalhe-titulo" style="margin:0;font-size:var(--text-lg);font-weight:700"></h3>
-              <div class="pl-metricas" id="detalhe-metricas"></div>
+            <div class="pl-cab">
+              <span class="pl-tipo" id="detalhe-tipo"></span>
+              <div class="pl-cab-texto">
+                <h3 id="detalhe-titulo"></h3>
+                <p id="detalhe-sub"></p>
+              </div>
+              <div class="pl-cab-acoes">
+                <button class="pl-acao" id="btn-foco" title="Ampliar a área da tabela">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+                  </svg>
+                  <span>Foco</span>
+                </button>
+                <button class="pl-acao pl-acao-perigo" id="btn-remover" hidden title="Remover planilha">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round" style="width:14px;height:14px">
+                    <path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>
+                  </svg>
+                  <span>Remover</span>
+                </button>
+              </div>
             </div>
-            <button class="pl-foco-btn" id="btn-foco" title="Ampliar a área de leitura">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
-              </svg>
-              <span>Foco</span>
-            </button>
-            <button class="btn btn-perigo" id="btn-remover" hidden title="Remover planilha">
+            <div class="pl-metricas" id="detalhe-metricas"></div>
+            <div class="pl-uso" id="detalhe-uso" hidden>
+              <span>No editor</span>
+              <code id="uso-codigo"></code>
+              <button type="button" id="btn-copiar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" style="width:13px;height:13px">
+                  <rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>
+                </svg>
+                <span>Copiar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pl-tabela-barra" id="tabela-barra" hidden>
+            <div class="pl-busca">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                   stroke-linejoin="round" style="width:14px;height:14px">
-                <path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>
-              </svg>
-            </button>
+                   style="width:14px;height:14px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input class="campo" id="filtro-linhas" type="search" placeholder="Buscar nas linhas" aria-label="Buscar nas linhas">
+            </div>
+            <span id="filtro-contagem"></span>
           </div>
 
           <div class="pl-tabela" id="detalhe-tabela" hidden>
@@ -353,25 +544,68 @@
 
   function planilhasVisiveis() {
     const termo = $('busca').value.trim().toLowerCase();
-    return planilhas.filter(p =>
+    const filtradas = planilhas.filter(p =>
       !termo || p.nome.toLowerCase().includes(termo) || (p.apelido || '').toLowerCase().includes(termo));
+    const ordem = $('ordem').value;
+    if (ordem === 'recentes') {
+      filtradas.sort((a, b) => String(b.atualizadoEm || '').localeCompare(String(a.atualizadoEm || '')));
+    } else if (ordem === 'tamanho') {
+      filtradas.sort((a, b) => (b.tamanho || 0) - (a.tamanho || 0));
+    }
+    return filtradas;   // "nome": a API já devolve em ordem natural
+  }
+
+  /** Selo do tipo de arquivo: o que importa é saber se é Excel, texto (csv) ou outro. */
+  function tipoArquivo(nome) {
+    const ext = (nome.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
+    const minuscula = ext.toLowerCase();
+    let classe = '';
+    if (['csv', 'tsv', 'txt', 'prn', 'dif'].includes(minuscula)) classe = 'csv';
+    else if (!['xlsx', 'xlsm', 'xlsb', 'xls', 'xlt', 'xltx', 'xltm', 'ods', 'fods'].includes(minuscula)) classe = 'outro';
+    return { rotulo: (ext || '?').toUpperCase().slice(0, 4), classe };
+  }
+
+  /** Como o código de um painel lê esta planilha. */
+  function trechoCodigo(planilha) {
+    const apelido = planilha.apelido;
+    if (apelido && /^[A-Za-z_$][\w$]*$/.test(apelido)) return 'dados.' + apelido;
+    return 'await consultar(' + JSON.stringify(apelido || planilha.nome) + ')';
+  }
+
+  function desenharResumo() {
+    const caixa = $('resumo-itens');
+    if (!planilhas.length) {
+      $('resumo').hidden = false;
+      $('resumo').textContent = 'Nenhuma planilha no sistema ainda.';
+      caixa.hidden = true;
+      return;
+    }
+    const total = planilhas.reduce((s, p) => s + (p.tamanho || 0), 0);
+    const maisRecente = planilhas.reduce((m, p) => (p.atualizadoEm || '') > (m || '') ? p.atualizadoEm : m, null);
+    const item = (valor, rotulo) => '<span class="pl-resumo-item"><b>' + valor + '</b>' + rotulo + '</span>';
+    $('resumo').hidden = true;
+    caixa.hidden = false;
+    caixa.innerHTML =
+      item(planilhas.length, planilhas.length === 1 ? 'planilha' : 'planilhas') +
+      item(UHNUI.tamanhoLegivel(total), 'no total') +
+      (maisRecente ? item('Atualizado', UHNUI.dataRelativa(maisRecente)) : '');
   }
 
   function desenharLista() {
     const visiveis = planilhasVisiveis();
+    desenharResumo();
 
-    $('resumo').textContent = planilhas.length
-      ? planilhas.length + ' planilhas · ' +
-        UHNUI.tamanhoLegivel(planilhas.reduce((s, p) => s + (p.tamanho || 0), 0)) + ' no total'
-      : 'Nenhuma planilha no sistema';
+    $('lista-contagem').textContent = $('busca').value.trim()
+      ? visiveis.length + ' de ' + planilhas.length
+      : planilhas.length + (planilhas.length === 1 ? ' arquivo' : ' arquivos');
 
     const itens = $('itens');
     itens.innerHTML = '';
 
     if (!visiveis.length) {
       const p = document.createElement('p');
-      p.style.cssText = 'padding:2rem 1rem;text-align:center;font-size:.78rem;color:var(--texto-3)';
-      p.textContent = planilhas.length ? 'Nada encontrado.' : 'Envie arquivos para começar.';
+      p.className = 'pl-vazio-lista';
+      p.textContent = planilhas.length ? 'Nenhuma planilha com esse nome.' : 'Envie arquivos para começar.';
       itens.appendChild(p);
       atualizarBarraSelecao();
       return;
@@ -382,6 +616,7 @@
       item.type = 'button';
       item.className = 'pl-item' + (aberta && aberta.nome === p.nome ? ' ativa' : '') +
                        (marcadas.has(p.nome) ? ' marcada' : '');
+      item.title = p.nome;
 
       // Só administradores excluem, então a caixa só aparece para eles.
       if (usuario && usuario.papel === 'admin') {
@@ -393,26 +628,32 @@
         item.appendChild(check);
       }
 
-      const icone = document.createElement('span');
-      icone.className = 'pl-icone';
-      icone.innerHTML = UHNUI.icone('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>', 15);
+      const tipo = tipoArquivo(p.nome);
+      const selo = document.createElement('span');
+      selo.className = 'pl-tipo ' + tipo.classe;
+      selo.textContent = tipo.rotulo;
 
       const texto = document.createElement('span');
       texto.className = 'pl-texto';
-      const ap = document.createElement('div');
-      ap.className = 'pl-apelido';
-      ap.textContent = p.apelido || p.nome;
-      const nm = document.createElement('div');
+      const linha1 = document.createElement('span');
+      linha1.className = 'pl-linha1';
+      if (p.apelido) {
+        const ap = document.createElement('span');
+        ap.className = 'pl-apelido';
+        ap.textContent = p.apelido;
+        linha1.appendChild(ap);
+      }
+      const nm = document.createElement('span');
       nm.className = 'pl-nome';
-      nm.textContent = p.nome;
-      nm.title = p.nome;
-      texto.append(ap, nm);
+      nm.textContent = p.nome.replace(/\.[a-z0-9]+$/i, '');
+      linha1.appendChild(nm);
 
-      const tam = document.createElement('span');
-      tam.style.cssText = 'font-size:.63rem;color:var(--texto-3);flex-shrink:0';
-      tam.textContent = UHNUI.tamanhoLegivel(p.tamanho);
+      const meta = document.createElement('div');
+      meta.className = 'pl-meta';
+      meta.textContent = UHNUI.tamanhoLegivel(p.tamanho) + (p.atualizadoEm ? ' · ' + UHNUI.dataRelativa(p.atualizadoEm) : '');
+      texto.append(linha1, meta);
 
-      item.append(icone, texto, tam);
+      item.append(selo, texto);
       item.addEventListener('click', () => abrir(p));
       itens.appendChild(item);
     });
@@ -420,61 +661,111 @@
     atualizarBarraSelecao();
   }
 
+  // Linhas da planilha aberta, guardadas para a busca não reler o arquivo.
+  let linhasAbertas = [];
+  let colunasAbertas = [];
+  const LIMITE_LINHAS = 200;
+
+  function desenharTabela() {
+    const termo = $('filtro-linhas').value.trim().toLowerCase();
+    const indices = [];
+    for (let i = 0; i < linhasAbertas.length; i++) {
+      if (!termo) { indices.push(i); continue; }
+      const linha = linhasAbertas[i];
+      if (colunasAbertas.some(c => linha[c] != null && String(linha[c]).toLowerCase().includes(termo))) indices.push(i);
+    }
+
+    const exibidas = indices.slice(0, LIMITE_LINHAS);
+    const total = linhasAbertas.length.toLocaleString('pt-BR');
+    $('filtro-contagem').textContent = termo
+      ? indices.length.toLocaleString('pt-BR') + ' de ' + total + ' linhas'
+      : '';
+    $('detalhe-rodape').hidden = false;
+    $('detalhe-rodape').textContent = !indices.length
+      ? 'Nenhuma linha encontrada.'
+      : exibidas.length < indices.length
+        ? 'Mostrando as primeiras ' + exibidas.length + ' de ' + indices.length.toLocaleString('pt-BR') +
+          (termo ? ' linhas encontradas' : ' linhas') + ' · o painel lê todas'
+        : 'Mostrando ' + (exibidas.length === 1 ? 'a única linha' : 'todas as ' + exibidas.length.toLocaleString('pt-BR') + ' linhas') +
+          (termo ? ' encontradas' : '');
+
+    const frag = document.createDocumentFragment();
+    exibidas.forEach(i => {
+      const linha = linhasAbertas[i];
+      const tr = document.createElement('tr');
+      const num = document.createElement('td');
+      num.className = 'pl-num';
+      num.textContent = i + 1;
+      tr.appendChild(num);
+      colunasAbertas.forEach(c => {
+        const td = document.createElement('td');
+        const v = linha[c];
+        const texto = (v === null || v === undefined) ? '' : String(v);
+        td.textContent = texto;
+        if (texto.length > 30) td.title = texto;
+        tr.appendChild(td);
+      });
+      frag.appendChild(tr);
+    });
+    $('tbody').innerHTML = '';
+    $('tbody').appendChild(frag);
+  }
+
   async function abrir(planilha) {
     aberta = planilha;
     desenharLista();
 
+    const metrica = (valor, rotulo, classe) =>
+      '<div class="pl-metrica' + (classe ? ' ' + classe : '') + '"><span>' + rotulo + '</span><b>' + valor + '</b></div>';
+
+    const tipo = tipoArquivo(planilha.nome);
     $('detalhe-vazio').style.display = 'none';
     $('detalhe-topo').hidden = false;
-    $('detalhe-tabela').hidden = false;
+    $('detalhe-tipo').className = 'pl-tipo ' + tipo.classe;
+    $('detalhe-tipo').textContent = tipo.rotulo;
     $('detalhe-titulo').textContent = planilha.nome;
+    $('detalhe-sub').textContent = planilha.atualizadoEm
+      ? 'Atualizada ' + UHNUI.dataRelativa(planilha.atualizadoEm) + ' · ' +
+        new Date(planilha.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
     $('detalhe-metricas').innerHTML =
-      '<span style="font-size:var(--text-sm);color:var(--text-muted)">Lendo...</span>';
+      metrica('Lendo...', 'Linhas', 'carregando') + metrica('Lendo...', 'Colunas', 'carregando') +
+      metrica(UHNUI.tamanhoLegivel(planilha.tamanho), 'Tamanho');
+    $('uso-codigo').textContent = trechoCodigo(planilha);
+    $('detalhe-uso').hidden = false;
+    $('btn-remover').hidden = !usuario || usuario.papel !== 'admin';
+    $('tabela-barra').hidden = true;
+    $('detalhe-tabela').hidden = false;
     $('detalhe-rodape').hidden = true;
+    $('filtro-linhas').value = '';
     $('thead').innerHTML = '';
     $('tbody').innerHTML = '';
-    $('btn-remover').hidden = !usuario || usuario.papel !== 'admin';
+    linhasAbertas = [];
+    colunasAbertas = [];
 
     try {
       const linhas = await UHN.consultar(planilha.apelido || planilha.nome);
-      const colunas = Object.keys(linhas[0] || {});
-
-      const metrica = (valor, rotulo) =>
-        '<div class="pl-metrica"><b>' + valor + '</b><span>' + rotulo + '</span></div>';
+      if (aberta !== planilha) return;   // trocou de planilha enquanto lia
+      linhasAbertas = linhas;
+      colunasAbertas = Object.keys(linhas[0] || {});
 
       $('detalhe-metricas').innerHTML =
-        metrica(linhas.length.toLocaleString('pt-BR'), 'linhas') +
-        metrica(colunas.length, 'colunas') +
-        metrica(UHNUI.tamanhoLegivel(planilha.tamanho), 'tamanho') +
-        (planilha.apelido
-          ? '<div class="pl-metrica"><b><span class="pl-chip-apelido">dados.' +
-            planilha.apelido + '</span></b><span>no código</span></div>'
-          : '');
-
-      const exibidas = Math.min(linhas.length, 200);
-      $('detalhe-rodape').hidden = false;
-      $('detalhe-rodape').textContent = exibidas < linhas.length
-        ? 'Mostrando as primeiras ' + exibidas + ' de ' + linhas.length.toLocaleString('pt-BR') +
-          ' linhas · o painel lê todas'
-        : 'Mostrando todas as ' + linhas.length.toLocaleString('pt-BR') + ' linhas';
+        metrica(linhas.length.toLocaleString('pt-BR'), 'Linhas') +
+        metrica(colunasAbertas.length.toLocaleString('pt-BR'), 'Colunas') +
+        metrica(UHNUI.tamanhoLegivel(planilha.tamanho), 'Tamanho');
 
       const tr = document.createElement('tr');
-      colunas.forEach(c => { const th = document.createElement('th'); th.textContent = c; tr.appendChild(th); });
+      const thNum = document.createElement('th');
+      thNum.className = 'pl-num';
+      thNum.textContent = '#';
+      tr.appendChild(thNum);
+      colunasAbertas.forEach(c => { const th = document.createElement('th'); th.textContent = c; tr.appendChild(th); });
       $('thead').appendChild(tr);
 
-      const frag = document.createDocumentFragment();
-      linhas.slice(0, 200).forEach(l => {
-        const tr = document.createElement('tr');
-        colunas.forEach(c => {
-          const td = document.createElement('td');
-          const v = l[c];
-          td.textContent = (v === null || v === undefined) ? '' : String(v);
-          tr.appendChild(td);
-        });
-        frag.appendChild(tr);
-      });
-      $('tbody').appendChild(frag);
+      $('tabela-barra').hidden = false;
+      desenharTabela();
     } catch (err) {
+      if (aberta !== planilha) return;
       $('detalhe-metricas').innerHTML = '';
       $('detalhe-metricas').textContent = err.message;
     }
@@ -678,10 +969,15 @@
 
   function fecharDetalhe() {
     aberta = null;
+    linhasAbertas = [];
+    colunasAbertas = [];
     document.querySelector('.pl-layout').classList.remove('focado');
+    $('btn-foco').querySelector('span').textContent = 'Foco';
     $('detalhe-rodape').hidden = true;
     $('detalhe-vazio').style.display = 'flex';
     $('detalhe-topo').hidden = true;
+    $('detalhe-uso').hidden = true;
+    $('tabela-barra').hidden = true;
     $('detalhe-tabela').hidden = true;
   }
 
@@ -751,6 +1047,24 @@
     });
 
     $('busca').addEventListener('input', desenharLista);
+    $('ordem').addEventListener('change', desenharLista);
+
+    let esperaFiltro = null;
+    $('filtro-linhas').addEventListener('input', () => {
+      clearTimeout(esperaFiltro);
+      esperaFiltro = setTimeout(desenharTabela, 150);   // planilhas grandes: não refiltra a cada tecla
+    });
+
+    $('btn-copiar').addEventListener('click', async () => {
+      const texto = $('uso-codigo').textContent;
+      try {
+        await navigator.clipboard.writeText(texto);
+        UHNUI.aviso('Copiado: ' + texto, 'sucesso');
+      } catch {
+        UHNUI.aviso('Não foi possível copiar. Selecione o texto e copie manualmente.', 'alerta');
+      }
+    });
+
     carregar();
   })();
 })();

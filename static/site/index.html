@@ -42,8 +42,8 @@
     </a>
 
     <nav class="menu" id="menu" aria-label="Seções do site">
-      <a href="#solucoes">Soluções</a>
       <a href="#plataforma">Plataforma</a>
+      <a href="#solucoes">Soluções</a>
       <a href="#projetos">Projetos</a>
       <a href="#sobre">Sobre</a>
       <a href="#contato">Contato</a>
@@ -55,7 +55,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
         <span data-acesso-rotulo>Entrar</span>
       </a>
-      <a href="#contato" class="botao botao-escuro">Solicite uma demonstração <svg class="seta"><use href="#i-seta"/></svg></a>
+      <a href="#" data-contato="whatsapp" class="botao botao-escuro">Solicite uma demonstração <svg class="seta"><use href="#i-seta"/></svg></a>
     </div>
 
     <button class="menu-alternar" id="menu-alternar" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">
@@ -272,52 +272,183 @@
         <h2 class="titulo-secao">Visão completa<br>do empreendimento.</h2>
       </div>
       <p>Módulos integrados para acompanhar o projeto de forma estruturada, com dados consistentes e foco em resultados.</p>
-      <a href="#contato" class="link-seta">Fale com um especialista <svg><use href="#i-seta"/></svg></a>
+      <a href="#" data-contato="whatsapp" class="link-seta">Fale com um especialista <svg><use href="#i-seta"/></svg></a>
     </div>
 
     <div class="solucoes-grade revelar">
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-project-controls.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16c3-1 4-7 7-8s4 2 6 1"/></svg>
         </div>
         <h3>Project Controls</h3>
         <p>Curva S, EAP, marcos e forecast.</p>
       </a>
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-engenharia.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2.5 8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M12 21.5v-9.5M3.5 7.25 12 12l8.5-4.75"/></svg>
         </div>
         <h3>Engenharia</h3>
         <p>Documentos, BIM 3D/4D e integração.</p>
       </a>
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-suprimentos.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V4h8v3M3 12h18"/></svg>
         </div>
         <h3>Suprimentos</h3>
         <p>Requisições, compras, fornecedores e materiais.</p>
       </a>
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-construcao.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18v2H3z"/><path d="M5 18v-3a7 7 0 0 1 14 0v3"/><path d="M10 8.3V5h4v3.3"/></svg>
         </div>
         <h3>Construção</h3>
         <p>Produção, spools, juntas e qualidade.</p>
       </a>
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-comissionamento.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
         </div>
         <h3>Comissionamento</h3>
         <p>Sistemas, FVI, FVM e pendências.</p>
       </a>
-      <a class="solucao" href="#contato">
+      <a class="solucao" href="#" data-contato="whatsapp">
         <div class="solucao-imagem" style="--foto: url('/site/img/solucao-inteligencia.jpg')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4M7 13l3-3 2 2 5-5"/></svg>
         </div>
         <h3>Inteligência de Dados</h3>
         <p>Dashboards executivos, analytics e IA.</p>
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Projetos: setores atendidos e como um projeto entra na plataforma
+     ====================================================================== -->
+<section class="projetos" id="projetos">
+  <div class="envoltorio">
+    <div class="solucoes-cabeca revelar">
+      <div>
+        <p class="sobretitulo">Projetos</p>
+        <h2 class="titulo-secao">Feita para<br>obras complexas.</h2>
+      </div>
+      <p>Obras industriais de grande porte, com milhares de itens, várias frentes de trabalho e muitas planilhas para acompanhar ao mesmo tempo.</p>
+    </div>
+
+    <div class="projetos-grade revelar">
+      <div class="setor">
+        <span class="setor-num">01</span>
+        <h3>Óleo e gás</h3>
+        <p>Refinarias, unidades de processo, dutos e plataformas.</p>
+      </div>
+      <div class="setor">
+        <span class="setor-num">02</span>
+        <h3>Energia</h3>
+        <p>Usinas, subestações e linhas de transmissão.</p>
+      </div>
+      <div class="setor">
+        <span class="setor-num">03</span>
+        <h3>Mineração e siderurgia</h3>
+        <p>Plantas de beneficiamento, pátios e expansões.</p>
+      </div>
+      <div class="setor">
+        <span class="setor-num">04</span>
+        <h3>Indústria e infraestrutura</h3>
+        <p>Química, celulose, saneamento e grandes obras civis.</p>
+      </div>
+    </div>
+
+    <div class="etapas revelar">
+      <p class="etapas-titulo">Como um projeto entra na EPCVIEW</p>
+      <ol class="etapas-lista">
+        <li>
+          <span class="etapa-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
+          <strong>Envie as planilhas da obra</strong>
+          <span>As mesmas que a equipe já usa: avanço físico, suprimentos, spools, juntas, efetivo. Sem migração de sistema.</span>
+        </li>
+        <li>
+          <span class="etapa-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+          <strong>Monte os painéis</strong>
+          <span>Curva S, avanço por disciplina, materiais, SMS: cada painel lê direto das planilhas enviadas.</span>
+        </li>
+        <li>
+          <span class="etapa-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16.5 3.6a4 4 0 0 1 0 7.3"/></svg></span>
+          <strong>A equipe acompanha</strong>
+          <span>Cada pessoa vê os painéis liberados para o seu grupo, no computador ou no celular. Planilha nova, painel atualizado.</span>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Sobre
+     ====================================================================== -->
+<section class="sobre" id="sobre">
+  <div class="envoltorio sobre-grade">
+    <div class="sobre-texto revelar">
+      <p class="sobretitulo">Sobre</p>
+      <h2 class="titulo-secao">Os dados da obra,<br>prontos para decidir.</h2>
+      <p>A EPCVIEW reúne em um só lugar as planilhas que movem um empreendimento EPC e as transforma em painéis claros para quem precisa decidir — da gerência do contrato à frente de campo.</p>
+      <p>Em vez de trocar o jeito de trabalhar da equipe, a plataforma parte do que ela já produz todos os dias.</p>
+    </div>
+
+    <div class="diferenciais revelar">
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg></span>
+        <h3>Planilhas como fonte</h3>
+        <p>Excel, CSV ou ODS, do jeito que a obra já gera.</p>
+      </div>
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 6-7"/></svg></span>
+        <h3>Painéis sob medida</h3>
+        <p>Cada indicador montado para a realidade do contrato.</p>
+      </div>
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/></svg></span>
+        <h3>Sempre atualizado</h3>
+        <p>Subiu a planilha nova, os painéis já mostram os novos números.</p>
+      </div>
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <h3>Acesso por perfil</h3>
+        <p>Grupos definem quem vê quais painéis e planilhas.</p>
+      </div>
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="11" rx="1.5"/><path d="M6 19h6"/><rect x="17" y="8" width="5" height="12" rx="1"/></svg></span>
+        <h3>Em qualquer tela</h3>
+        <p>No navegador do computador, do tablet ou do celular.</p>
+      </div>
+      <div class="diferencial">
+        <span class="diferencial-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+        <h3>Acesso protegido</h3>
+        <p>Login individual, senhas criptografadas e sessão segura.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     Contato
+     ====================================================================== -->
+<section class="contato" id="contato">
+  <div class="envoltorio">
+    <div class="chamada revelar">
+      <div>
+        <p class="sobretitulo">Contato</p>
+        <h2>Vamos conversar sobre o seu projeto?</h2>
+        <p>Mostramos a EPCVIEW funcionando com dados de obra e entendemos o que o seu contrato precisa acompanhar.</p>
+      </div>
+      <div class="chamada-acoes">
+        <a href="#" data-contato="whatsapp" class="botao botao-primario">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>
+          Falar pelo WhatsApp
+        </a>
+        <a href="#" data-contato="email" class="botao botao-fantasma">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <span data-contato-texto="email">Enviar e-mail</span>
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -348,14 +479,15 @@
           <li><a href="#plataforma">Plataforma</a></li>
           <li><a href="#projetos">Projetos</a></li>
           <li><a href="#sobre">Sobre</a></li>
-          <li><a href="#contato">Contato</a></li>
+          <li><a href="#" data-contato="email" data-contato-texto="email">E-mail</a></li>
+          <li><a href="#" data-contato="whatsapp">WhatsApp</a></li>
         </ul>
       </div>
       <div>
         <h4>Clientes</h4>
         <ul>
           <li><a href="/login.html" data-acesso><span data-acesso-rotulo>Acessar plataforma</span></a></li>
-          <li><a href="#contato">Solicitar demonstração</a></li>
+          <li><a href="#" data-contato="whatsapp">Solicitar demonstração</a></li>
         </ul>
       </div>
     </div>
@@ -373,10 +505,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
     <video id="video" controls preload="none" playsinline></video>
-    <div class="video-vazio" id="video-vazio"><p>O vídeo de apresentação estará disponível em breve.<br>Enquanto isso, <a href="#contato" style="color:#00C2FF" id="video-contato">solicite uma demonstração ao vivo</a>.</p></div>
+    <div class="video-vazio" id="video-vazio"><p>O vídeo de apresentação estará disponível em breve.<br>Enquanto isso, <a href="#" data-contato="whatsapp" style="color:#00C2FF" id="video-contato">solicite uma demonstração ao vivo</a>.</p></div>
   </div>
 </div>
 
+<script src="/site/contato.js"></script>
 <script src="/site/site.js"></script>
 </body>
 </html>

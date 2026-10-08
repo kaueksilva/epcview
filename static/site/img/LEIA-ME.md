@@ -25,4 +25,4 @@ essas imagens com cache de 1 dia.
 ## Vídeo
 
 O botão "Assista ao vídeo" toca `site/video/apresentacao.mp4`. Sem o arquivo,
-o modal mostra "disponível em breve" e um atalho para o formulário de contato.
+o modal mostra "disponível em breve" e um atalho para o WhatsApp (ver site/contato.js).

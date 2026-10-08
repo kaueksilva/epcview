@@ -1,6 +1,6 @@
 /**
  * EPCVIEW - site público
- * Menu móvel, atalho para quem já tem sessão, formulário de contato,
+ * Menu móvel, atalho para quem já tem sessão,
  * vídeo institucional e a revelação suave das seções ao rolar.
  */
 (function () {
@@ -27,7 +27,7 @@
     });
 
     // Item do menu ativo conforme a seção visível --------------------------------
-    const linksMenu = Array.from(document.querySelectorAll('.menu a[href^="#"]'));
+    const linksMenu = Array.from(document.querySelectorAll('.menu a[href^="#"]:not([href="#"])'));
     const secoes = linksMenu.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
     if ('IntersectionObserver' in window) {
         const observador = new IntersectionObserver(entradas => {
@@ -93,44 +93,4 @@
     modal.addEventListener('click', e => { if (e.target === modal) fecharVideo(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('aberto')) fecharVideo(); });
 
-    // Formulário de contato -------------------------------------------------------
-    const form = $('form-contato');
-    const status = $('c-status');
-    const botao = $('c-enviar');
-    const rotuloBotao = botao.innerHTML;
-
-    function mostrarStatus(texto, tipo) {
-        status.textContent = texto;     // textContent: a mensagem pode vir do servidor
-        status.className = 'form-status ' + tipo;
-    }
-
-    form.addEventListener('submit', async e => {
-        e.preventDefault();
-        status.className = 'form-status';
-
-        const dados = Object.fromEntries(new FormData(form).entries());
-        if (!String(dados.nome || '').trim()) { mostrarStatus('Informe seu nome.', 'erro'); $('c-nome').focus(); return; }
-        if (!$('c-email').checkValidity() || !String(dados.email || '').trim()) {
-            mostrarStatus('Informe um e-mail válido.', 'erro'); $('c-email').focus(); return;
-        }
-
-        botao.disabled = true;
-        botao.textContent = 'Enviando...';
-        try {
-            const resp = await fetch('/api/contato', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
-            const corpo = await resp.json().catch(() => ({}));
-            if (!resp.ok) throw new Error(corpo.error || 'Não foi possível enviar agora.');
-            form.reset();
-            mostrarStatus('Recebemos seu contato. Nossa equipe retorna em breve — obrigado!', 'ok');
-        } catch (err) {
-            mostrarStatus(err.message === 'Failed to fetch' ? 'Sem conexão com o servidor. Tente novamente.' : err.message, 'erro');
-        } finally {
-            botao.disabled = false;
-            botao.innerHTML = rotuloBotao;
-        }
-    });
 })();

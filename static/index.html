@@ -244,6 +244,25 @@
     .gaveta-lista { width: 13rem; }
     .rotulo-largo { display: none; }
   }
+  @media (max-width: 768px) {
+    /* No celular a tela rola: código e pré-visualização um embaixo do outro,
+       cada um com altura útil, em vez de dividir uma tela já pequena. */
+    .conteudo { overflow-y: auto; }
+    .ed-topo { flex-wrap: wrap; gap: .5rem; }
+    .ed-identidade { flex: 1 1 100%; max-width: none; }
+    .ed-acoes { flex: 1 1 100%; flex-wrap: wrap; }
+    /* Ícones numa linha, Executar e Publicar lado a lado na de baixo */
+    .ed-acoes #btn-executar, .ed-acoes #btn-salvar { order: 2; flex: 1 1 calc(50% - .2rem); }
+    .ed-separador { display: none; }
+    .area { flex: none; overflow: visible; }
+    #painel-codigo { height: 62dvh; flex-shrink: 0; }
+    .coluna-preview { height: 80dvh; flex: none !important; border-top: 1px solid var(--borda); }
+    .gaveta-corpo { flex-direction: column; }
+    .gaveta-lista { width: 100%; height: 38%; border-right: none; border-bottom: 1px solid var(--borda); }
+    .gaveta-topo { flex-wrap: wrap; }
+    .fontes-barra { justify-content: space-between; }
+    .fontes-lista { order: 3; flex-basis: 100%; }
+  }
 </style>
 </head>
 
@@ -269,7 +288,7 @@
         <span id="marca-rascunho" class="marca-nao-salvo"><i></i> não salvo</span>
       </div>
 
-      <div style="display:flex; align-items:center; gap:.4rem">
+      <div class="ed-acoes" style="display:flex; align-items:center; gap:.4rem">
         <button class="btn btn-suave" id="btn-modelos" title="Começar de um modelo pronto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
                stroke-linejoin="round" style="width:15px;height:15px">
@@ -278,7 +297,7 @@
           <span class="rotulo-largo">Modelos</span>
         </button>
 
-        <div style="width:1px;height:1.4rem;background:var(--borda)"></div>
+        <div class="ed-separador" style="width:1px;height:1.4rem;background:var(--borda)"></div>
 
         <button class="btn btn-acao" id="btn-executar" title="Executar (Ctrl+Enter)">
           <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M6 4l14 8-14 8z"/></svg>
@@ -353,7 +372,7 @@
 
       <div class="divisor" id="divisor" role="separator" aria-label="Redimensionar painéis"></div>
 
-      <section class="coluna" style="flex:1">
+      <section class="coluna coluna-preview" style="flex:1">
         <div class="coluna-cabecalho">
           <span class="coluna-titulo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

@@ -2,7 +2,7 @@
 
 /**
  * Testa lib/permissoes.js — as mesmas funções que server.js chama em toda
- * rota de dashboards, páginas e aplicações. Não testa server.js diretamente
+ * rota de dashboards e páginas. Não testa server.js diretamente
  * porque importá-lo sobe um servidor de verdade (server.listen).
  */
 
@@ -18,7 +18,7 @@ process.env.UHN_DB_ARQUIVO = ARQUIVO_DB;
 process.env.UHN_DB_ARQUIVO_SESSOES = ARQUIVO_SESSOES;
 
 const db = require('../lib/db');
-const { listaPermite, podeVerPagina, podeVerDashboard, podeAbrirApp } = require('../lib/permissoes');
+const { listaPermite, podeVerPagina, podeVerDashboard } = require('../lib/permissoes');
 
 async function limpar() {
     await db._resetParaTestes();
@@ -88,36 +88,4 @@ test('podeVerDashboard: grupo com lista específica só vê os painéis dela', (
     const usuario = db.criarUsuario({ login: 'sup', nome: 'Sup', senha: 'senha123', grupoId: grupo.id });
     assert.equal(podeVerDashboard(usuario, 'painel-suprimentos'), true);
     assert.equal(podeVerDashboard(usuario, 'painel-financeiro'), false);
-});
-
-// ---------------------------------------------------------------------------
-// podeAbrirApp (Dockers)
-// ---------------------------------------------------------------------------
-
-test('podeAbrirApp: sem grupo liberado, só admin abre', () => {
-    const grupo = db.criarGrupo({ nome: 'Suprimentos', admin: false });
-    const usuario = db.criarUsuario({ login: 'joao', nome: 'João', senha: 'senha123', grupoId: grupo.id });
-    assert.equal(podeAbrirApp(usuario, { gruposPermitidos: [] }), false);
-});
-
-test('podeAbrirApp: curinga "*" libera qualquer usuário logado', () => {
-    const grupo = db.criarGrupo({ nome: 'Suprimentos', admin: false });
-    const usuario = db.criarUsuario({ login: 'joao', nome: 'João', senha: 'senha123', grupoId: grupo.id });
-    assert.equal(podeAbrirApp(usuario, { gruposPermitidos: ['*'] }), true);
-});
-
-test('podeAbrirApp: só libera pro grupo específico listado, nunca pros outros', () => {
-    const grupoLiberado = db.criarGrupo({ nome: 'Suprimentos', admin: false });
-    const grupoNegado = db.criarGrupo({ nome: 'Engenharia', admin: false });
-    const liberado = db.criarUsuario({ login: 'sup', nome: 'Sup', senha: 'senha123', grupoId: grupoLiberado.id });
-    const negado = db.criarUsuario({ login: 'eng', nome: 'Eng', senha: 'senha123', grupoId: grupoNegado.id });
-    const app = { gruposPermitidos: [grupoLiberado.id] };
-    assert.equal(podeAbrirApp(liberado, app), true);
-    assert.equal(podeAbrirApp(negado, app), false);
-});
-
-test('podeAbrirApp: admin abre qualquer aplicação mesmo fora dos grupos permitidos', () => {
-    const grupoAdmin = db.criarGrupo({ nome: 'Administradores', admin: true });
-    const admin = db.criarUsuario({ login: 'admin', nome: 'Admin', senha: 'senha123', grupoId: grupoAdmin.id });
-    assert.equal(podeAbrirApp(admin, { gruposPermitidos: [] }), true);
 });

@@ -2,8 +2,7 @@
  * EPCVIEW - Servidor
  * ---------------------------------------------------------------------------
  *   - Site público institucional em / (static/site/), sem login.
- *   - Painel administrativo (dashboards, planilhas, usuários, dockers, contatos)
- *     atrás de login.
+ *   - Painel administrativo (dashboards, planilhas, usuários) atrás de login.
  *   - Autenticação por sessão (cookie httpOnly), com papéis admin/visualizador.
  *   - CRUD de dashboards e de planilhas, guardados em data/database.json.
  *   - Estáticos com proteção contra path traversal.
@@ -20,14 +19,12 @@ require('./lib/env')();   // .env local, antes de qualquer módulo que leia proc
 
 const db = require('./lib/db');
 const r2 = require('./lib/r2');
-const dockers = require('./lib/dockers');
-const contatos = require('./lib/contatos');
-const { podeVerPagina, podeVerDashboard, podeAbrirApp } = require('./lib/permissoes');
+const { podeVerPagina, podeVerDashboard } = require('./lib/permissoes');
 
 const PORT = Number(process.env.PORT) || 8000;
-// Site institucional desligado por enquanto: a raiz leva ao login/painel e
-// /site/ e /api/contato respondem 404. SITE_PUBLICO=1 no ambiente religa tudo.
-const SITE_PUBLICO = process.env.SITE_PUBLICO === '1';
+// Site institucional ligado por padrão em /. SITE_PUBLICO=0 no ambiente o
+// desliga: a raiz passa a levar ao login/painel e /site/ responde 404.
+const SITE_PUBLICO = process.env.SITE_PUBLICO !== '0';
 const STATIC_DIR = path.join(__dirname, 'static');
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;        // dashboards são só código
@@ -53,7 +50,6 @@ const MIME_TYPES = {
 // Páginas que podem ser abertas sem sessão. Tudo em /site/ também é público.
 const PUBLICAS = new Set(['/login.html', '/style.css', '/favicon.svg', '/assets/ui.js']);
 const PREFIXO_SITE = '/site/';
-const MAX_CONTATO_BYTES = 16 * 1024;
 
 // ---------------------------------------------------------------------------
 // Utilidades HTTP
@@ -143,7 +139,7 @@ function exigirAdmin(usuario) {
 // API: sessão
 // ---------------------------------------------------------------------------
 
-/** Anexa o que o usuário pode ver (páginas, painéis, aplicações) — resolvido do grupo, nunca guardado no registro. */
+/** Anexa o que o usuário pode ver (páginas e painéis) — resolvido do grupo, nunca guardado no registro. */
 function comPermissoes(usuario) {
     return Object.assign({}, usuario, { permissoes: db.permissoesDoUsuario(usuario) });
 }
@@ -351,80 +347,7 @@ async function rotaPlanilhas(req, res, segmentos, usuario) {
 }
 
 // ---------------------------------------------------------------------------
-// API: dockers (outros sistemas rodando como container, dentro do UHNIntegra)
-// ---------------------------------------------------------------------------
-
-async function rotaDockers(req, res, segmentos, usuario) {
-    exigirLogin(usuario);
-    const acao = segmentos[2];
-
-    // Leitura básica: com ?menu=1 (usado pela barra lateral), qualquer papel só vê
-    // o que pode abrir; sem isso, admin gerencia a lista inteira (inclusive ocultas).
-    if (req.method === 'GET' && !acao) {
-        const querMenu = analisarUrl(req).searchParams.get('menu') === '1';
-        if (usuario.papel === 'admin' && !querMenu) {
-            enviarJSON(res, 200, await dockers.listarComStatus());
-        } else {
-            const visiveis = dockers.listar()
-                .filter(a => a.exibirEm === 'menu' && podeAbrirApp(usuario, a))
-                .map(a => ({ id: a.id, titulo: a.titulo, extensaoUrl: a.extensaoUrl }));
-            enviarJSON(res, 200, visiveis);
-        }
-        return;
-    }
-
-    if (req.method === 'GET' && acao === 'status-docker') {
-        enviarJSON(res, 200, { disponivel: await dockers.dockerDisponivel() });
-        return;
-    }
-
-    // Tudo daqui pra baixo cria, altera ou controla containers: só admin.
-    exigirAdmin(usuario);
-
-    if (req.method === 'POST' && acao === 'upload') {
-        try {
-            enviarJSON(res, 200, await dockers.receberUpload(req));
-        } catch (err) {
-            enviarJSON(res, err.status || 500, { error: err.message });
-        }
-        return;
-    }
-
-    if (req.method === 'POST' && !acao) {
-        const registro = await dockers.registrarApp(await lerJSON(req), usuario);
-        enviarJSON(res, 201, registro);
-        return;
-    }
-
-    const id = acao;
-    if (req.method === 'POST' && id && segmentos[3] === 'parar') {
-        await dockers.pausarApp(id);
-        enviarJSON(res, 200, { status: 'parado' });
-        return;
-    }
-    if (req.method === 'POST' && id && segmentos[3] === 'iniciar') {
-        await dockers.religarApp(id);
-        enviarJSON(res, 200, { status: 'rodando' });
-        return;
-    }
-    if (req.method === 'POST' && id && segmentos[3] === 'imagem') {
-        enviarJSON(res, 200, await dockers.atualizarImagem(id, await lerJSON(req)));
-        return;
-    }
-    if ((req.method === 'PUT' || req.method === 'PATCH') && id) {
-        enviarJSON(res, 200, dockers.atualizarApp(id, await lerJSON(req)));
-        return;
-    }
-    if (req.method === 'DELETE' && id) {
-        enviarJSON(res, 200, await dockers.removerApp(id));
-        return;
-    }
-
-    enviarJSON(res, 405, { error: 'Método não permitido.' });
-}
-
-// ---------------------------------------------------------------------------
-// API: grupos (só admin) — controlam páginas, painéis e aplicações visíveis
+// API: grupos (só admin) — controlam páginas e painéis visíveis
 // ---------------------------------------------------------------------------
 
 async function rotaGrupos(req, res, segmentos, usuario) {
@@ -458,44 +381,6 @@ async function rotaGrupos(req, res, segmentos, usuario) {
 }
 
 // ---------------------------------------------------------------------------
-// API: contato (público: formulário do site) e contatos (admin: caixa de entrada)
-// ---------------------------------------------------------------------------
-
-/** IP do visitante — atrás do proxy do Render, o primeiro de X-Forwarded-For. */
-function ipDaRequisicao(req) {
-    const encaminhado = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-    return encaminhado || req.socket.remoteAddress || 'desconhecido';
-}
-
-async function rotaContato(req, res) {
-    if (req.method !== 'POST') { enviarJSON(res, 405, { error: 'Método não permitido.' }); return; }
-    const texto = (await lerCorpo(req, MAX_CONTATO_BYTES)).toString('utf8');
-    let dados;
-    try { dados = JSON.parse(texto); } catch { throw Object.assign(new Error('JSON inválido.'), { status: 400 }); }
-    enviarJSON(res, 201, contatos.registrar(dados, ipDaRequisicao(req)));
-}
-
-async function rotaContatos(req, res, segmentos, usuario) {
-    exigirAdmin(usuario);
-    const id = segmentos[2] || null;
-
-    if (req.method === 'GET' && !id) {
-        enviarJSON(res, 200, { contatos: contatos.listar(), naoLidos: contatos.contarNaoLidos() });
-        return;
-    }
-    if ((req.method === 'PUT' || req.method === 'PATCH') && id) {
-        enviarJSON(res, 200, contatos.marcar(id, await lerJSON(req)));
-        return;
-    }
-    if (req.method === 'DELETE' && id) {
-        contatos.remover(id);
-        enviarJSON(res, 200, { status: 'removido', id });
-        return;
-    }
-    enviarJSON(res, 405, { error: 'Método não permitido.' });
-}
-
-// ---------------------------------------------------------------------------
 // Roteamento da API
 // ---------------------------------------------------------------------------
 
@@ -507,11 +392,8 @@ async function rotearApi(req, res, url, usuario) {
     if (recurso === 'usuarios') return rotaUsuarios(req, res, segmentos, usuario);
     if (recurso === 'dashboards') return rotaDashboards(req, res, segmentos, usuario);
     if (recurso === 'planilhas') return rotaPlanilhas(req, res, segmentos, usuario);
-    if (recurso === 'dockers') return rotaDockers(req, res, segmentos, usuario);
     if (recurso === 'grupos') return rotaGrupos(req, res, segmentos, usuario);
     if (recurso === 'config') return enviarJSON(res, 200, { sitePublico: SITE_PUBLICO });
-    if (recurso === 'contato' && SITE_PUBLICO) return rotaContato(req, res);
-    if (recurso === 'contatos') return rotaContatos(req, res, segmentos, usuario);
 
     enviarJSON(res, 404, { error: 'Rota não encontrada.' });
 }
@@ -605,25 +487,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-        // Aplicação registrada em /dockers? Encaminha pro container antes de
-        // qualquer outra rota — /<extensaoUrl>/... nunca chega em /api/ nem nos estáticos.
-        const primeiroSegmento = url.pathname.split('/')[1];
-        const dockerRegistrado = primeiroSegmento ? dockers.obterPorExtensao(primeiroSegmento) : null;
-        if (dockerRegistrado) {
-            if (!usuario) {
-                const destino = encodeURIComponent(url.pathname + (url.search || ''));
-                res.writeHead(302, { Location: '/login.html?destino=' + destino });
-                res.end();
-                return;
-            }
-            if (!podeAbrirApp(usuario, dockerRegistrado)) {
-                throw Object.assign(new Error('Seu grupo não tem acesso a esta aplicação.'), { status: 403 });
-            }
-            const resto = url.pathname.slice(1 + primeiroSegmento.length) || '/';
-            dockers.encaminhar(req, res, dockerRegistrado, resto + (url.search || ''));
-            return;
-        }
-
         if (url.pathname.startsWith('/api/')) {
             await rotearApi(req, res, url, usuario);
             return;
@@ -648,8 +511,6 @@ fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
 const senhaInicial = db.garantirAdmin();
 db.limparSessoesVencidas();
 setInterval(() => db.limparSessoesVencidas(), 60 * 60 * 1000).unref();
-setInterval(() => contatos.limparLimites(), 15 * 60 * 1000).unref();
-dockers.limparUploadsOrfaos();
 
 server.listen(PORT, async () => {
     let planilhas = '?';
@@ -663,13 +524,10 @@ server.listen(PORT, async () => {
                 'painel: http://localhost:' + PORT + '/login.html');
     console.log('  ' + '-'.repeat(70));
     console.log('  ' + db.listarDashboards().length + ' dashboards  ·  ' + planilhas + ' planilhas  ·  ' +
-                db.listarUsuarios().length + ' usuários  ·  ' + contatos.contarNaoLidos() + ' contatos não lidos');
+                db.listarUsuarios().length + ' usuários');
     if (!r2.configurado()) {
         console.log('  [r2] variáveis de ambiente ausentes — upload/leitura de planilhas vai falhar.' +
                      ' Configure R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.');
-    }
-    if (!await dockers.dockerDisponivel()) {
-        console.log('  [dockers] Docker não encontrado neste host — a tela de Dockers fica indisponível.');
     }
 
     if (senhaInicial) {

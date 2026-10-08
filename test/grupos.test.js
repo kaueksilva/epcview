@@ -78,21 +78,20 @@ test('e-mail inválido é recusado ao criar e ao editar', () => {
 // ---------------------------------------------------------------------------
 
 test('permissoesDoUsuario: admin vê tudo, independente do que o grupo tem configurado', () => {
-    const grupo = db.criarGrupo({ nome: 'Administradores', admin: true, paginas: [], dashboards: [], aplicacoes: [] });
+    const grupo = db.criarGrupo({ nome: 'Administradores', admin: true, paginas: [], dashboards: [] });
     const usuario = db.criarUsuario({ login: 'admin2', nome: 'Admin', senha: 'senha123', grupoId: grupo.id });
-    assert.deepEqual(db.permissoesDoUsuario(usuario), { paginas: 'todos', dashboards: 'todos', aplicacoes: 'todos' });
+    assert.deepEqual(db.permissoesDoUsuario(usuario), { paginas: 'todos', dashboards: 'todos' });
 });
 
 test('permissoesDoUsuario: visualizador herda exatamente o que o grupo libera', () => {
     const grupo = db.criarGrupo({
         nome: 'Suprimentos', admin: false,
-        paginas: ['planilhas'], dashboards: ['painel-suprimentos'], aplicacoes: ['*']
+        paginas: ['planilhas'], dashboards: ['painel-suprimentos']
     });
     const usuario = db.criarUsuario({ login: 'joao', nome: 'João', senha: 'senha123', grupoId: grupo.id });
     const permissoes = db.permissoesDoUsuario(usuario);
     assert.deepEqual(permissoes.paginas, ['planilhas']);
     assert.deepEqual(permissoes.dashboards, ['painel-suprimentos']);
-    assert.deepEqual(permissoes.aplicacoes, ['*']);
 });
 
 // ---------------------------------------------------------------------------
