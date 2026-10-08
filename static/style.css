@@ -225,6 +225,8 @@ body {
                 color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn[hidden] { display: none; }   /* o display: inline-flex acima venceria o [hidden] do navegador */
+a.btn { text-decoration: none; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
 .btn-primario {

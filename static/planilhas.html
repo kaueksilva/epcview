@@ -170,6 +170,7 @@
   .pl-acao:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-light); }
   .pl-acao[hidden] { display: none; }
   .pl-acao-perigo:hover { background: var(--red-soft); color: var(--red); border-color: rgba(229, 72, 77, .4); }
+  a.pl-acao { text-decoration: none; }
 
   .pl-metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); }
   .pl-metrica {
@@ -209,6 +210,9 @@
   .pl-tabela-barra .pl-busca { flex: 1; max-width: 22rem; }
   .pl-tabela-barra .campo { padding-top: 7px; padding-bottom: 7px; font-size: var(--text-sm); }
   .pl-tabela-barra span { font-size: var(--text-sm); color: var(--text-light); white-space: nowrap; }
+  .pl-exportar { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+  .pl-exportar .pl-acao { height: 30px; padding: 0 var(--space-3); }
+  .pl-tabela-barra .pl-exportar span { color: var(--text-muted); }
 
   .pl-tabela { flex: 1; overflow: auto; min-height: 0; }
   .pl-tabela[hidden] { display: none; }
@@ -369,6 +373,9 @@
     .pl-cab { flex-wrap: wrap; }
     .pl-cab-acoes { width: 100%; }
     .pl-cab-acoes .pl-acao { flex: 1; justify-content: center; }
+    .pl-tabela-barra { flex-wrap: wrap; }
+    .pl-exportar { width: 100%; }
+    .pl-exportar .pl-acao { flex: 1; justify-content: center; }
     .pl-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
     .pl-metrica { padding: var(--space-2) var(--space-3); }
     .pl-metrica b { font-size: var(--text-lg); }
@@ -391,7 +398,15 @@
       </div>
       <div style="display:flex;gap:.5rem;align-items:center">
         <input type="file" id="arquivo" accept=".xlsx,.xlsm,.xlsb,.xls,.xlt,.xltx,.xltm,.csv,.tsv,.txt,.ods,.fods,.dif,.prn,.dbf,.xml" multiple hidden>
-        <button class="btn btn-contorno" id="btn-sel-todas" hidden>Selecionar todas</button>
+        <button class="btn btn-contorno" id="btn-sel-todas">Selecionar todas</button>
+        <a class="btn btn-contorno" id="btn-baixar-todas" href="/api/exportar/planilhas?todas=1" hidden
+           title="Baixa todas as planilhas originais num arquivo .zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px">
+            <path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+          </svg>
+          Baixar todas
+        </a>
         <button class="btn btn-primario" id="btn-enviar" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                stroke-linejoin="round" style="width:15px;height:15px">
@@ -409,7 +424,8 @@
           <div class="pl-barra-sel" id="barra-sel">
             <span id="sel-contagem"></span>
             <button class="btn btn-contorno" id="btn-limpar-sel">Limpar</button>
-            <button class="btn btn-excluir" id="btn-excluir-sel">Excluir selecionadas</button>
+            <button class="btn btn-contorno" id="btn-baixar-sel" title="Baixa as selecionadas num arquivo .zip">Baixar (.zip)</button>
+            <button class="btn btn-excluir" id="btn-excluir-sel" hidden>Excluir selecionadas</button>
           </div>
 
           <div class="pl-lista-topo">
@@ -466,6 +482,13 @@
                 <p id="detalhe-sub"></p>
               </div>
               <div class="pl-cab-acoes">
+                <a class="pl-acao" id="btn-baixar" href="#" title="Baixar o arquivo original, do jeito que foi enviado">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+                    <path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                  </svg>
+                  <span>Baixar</span>
+                </a>
                 <button class="pl-acao" id="btn-foco" title="Ampliar a área da tabela">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                        stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
@@ -503,6 +526,11 @@
               <input class="campo" id="filtro-linhas" type="search" placeholder="Buscar nas linhas" aria-label="Buscar nas linhas">
             </div>
             <span id="filtro-contagem"></span>
+            <div class="pl-exportar">
+              <span id="exportar-rotulo">Exportar</span>
+              <button class="pl-acao" id="btn-exp-xlsx" title="Exporta as linhas da tabela (com a busca aplicada) para Excel">Excel</button>
+              <button class="pl-acao" id="btn-exp-csv" title="Exporta as linhas da tabela (com a busca aplicada) para CSV">CSV</button>
+            </div>
           </div>
 
           <div class="pl-tabela" id="detalhe-tabela" hidden>
@@ -574,6 +602,8 @@
 
   function desenharResumo() {
     const caixa = $('resumo-itens');
+    $('btn-baixar-todas').hidden = !planilhas.length;
+    $('btn-sel-todas').hidden = !planilhas.length;
     if (!planilhas.length) {
       $('resumo').hidden = false;
       $('resumo').textContent = 'Nenhuma planilha no sistema ainda.';
@@ -618,15 +648,13 @@
                        (marcadas.has(p.nome) ? ' marcada' : '');
       item.title = p.nome;
 
-      // Só administradores excluem, então a caixa só aparece para eles.
-      if (usuario && usuario.papel === 'admin') {
-        const check = document.createElement('span');
-        check.className = 'pl-check';
-        check.title = 'Selecionar para excluir';
-        check.innerHTML = UHNUI.icone('<path d="M20 6 9 17l-5-5"/>', 11);
-        check.addEventListener('click', e => { e.stopPropagation(); alternarMarcada(p.nome); });
-        item.appendChild(check);
-      }
+      // Todos selecionam para baixar; excluir as selecionadas é só para admin.
+      const check = document.createElement('span');
+      check.className = 'pl-check';
+      check.title = usuario && usuario.papel === 'admin' ? 'Selecionar para baixar ou excluir' : 'Selecionar para baixar';
+      check.innerHTML = UHNUI.icone('<path d="M20 6 9 17l-5-5"/>', 11);
+      check.addEventListener('click', e => { e.stopPropagation(); alternarMarcada(p.nome); });
+      item.appendChild(check);
 
       const tipo = tipoArquivo(p.nome);
       const selo = document.createElement('span');
@@ -666,7 +694,8 @@
   let colunasAbertas = [];
   const LIMITE_LINHAS = 200;
 
-  function desenharTabela() {
+  /** Índices das linhas que passam na busca da tabela (todas, se a busca estiver vazia). */
+  function indicesFiltrados() {
     const termo = $('filtro-linhas').value.trim().toLowerCase();
     const indices = [];
     for (let i = 0; i < linhasAbertas.length; i++) {
@@ -674,6 +703,64 @@
       const linha = linhasAbertas[i];
       if (colunasAbertas.some(c => linha[c] != null && String(linha[c]).toLowerCase().includes(termo))) indices.push(i);
     }
+    return indices;
+  }
+
+  /** Nome de arquivo para a exportação: o da planilha, sem extensão, mais "-filtrado" se houver busca. */
+  function nomeExportacao(extensao) {
+    const base = aberta.nome.replace(/\.[a-z0-9]+$/i, '');
+    return base + ($('filtro-linhas').value.trim() ? ' - filtrado' : '') + '.' + extensao;
+  }
+
+  /**
+   * Exporta o que está na tabela — todas as linhas (não só as 200 da tela),
+   * com a busca aplicada e as colunas já normalizadas, que é como os painéis leem.
+   * Para o arquivo original, do jeito que foi enviado, existe o botão "Baixar".
+   */
+  function exportarTabela(formato) {
+    if (!aberta || !linhasAbertas.length) return;
+    const indices = indicesFiltrados();
+    if (!indices.length) { UHNUI.aviso('Nenhuma linha para exportar com essa busca.', 'alerta'); return; }
+
+    const linhas = indices.map(i => linhasAbertas[i]);
+    const folha = XLSX.utils.json_to_sheet(linhas, { header: colunasAbertas });
+
+    if (formato === 'xlsx') {
+      const livro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(livro, folha, 'Dados');
+      XLSX.writeFile(livro, nomeExportacao('xlsx'), { compression: true });
+    } else {
+      // Ponto e vírgula + BOM: é o que o Excel em português abre direto, com acentos certos.
+      const csv = XLSX.utils.sheet_to_csv(folha, { FS: ';' });
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = nomeExportacao('csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    }
+    UHNUI.aviso(linhas.length.toLocaleString('pt-BR') + (linhas.length === 1 ? ' linha exportada.' : ' linhas exportadas.'), 'sucesso');
+  }
+
+  /** Baixa as planilhas selecionadas num .zip — o navegador cuida do download. */
+  function baixarSelecionadas() {
+    const nomes = [...marcadas];
+    if (!nomes.length) return;
+    if (nomes.length === 1) {
+      window.location.href = '/api/planilhas/' + encodeURIComponent(nomes[0]) + '?baixar=1';
+      return;
+    }
+    const params = new URLSearchParams();
+    nomes.forEach(n => params.append('nome', n));
+    window.location.href = '/api/exportar/planilhas?' + params.toString();
+    UHNUI.aviso('Preparando o .zip com ' + nomes.length + ' planilhas...', 'info');
+  }
+
+  function desenharTabela() {
+    const termo = $('filtro-linhas').value.trim().toLowerCase();
+    const indices = indicesFiltrados();
 
     const exibidas = indices.slice(0, LIMITE_LINHAS);
     const total = linhasAbertas.length.toLocaleString('pt-BR');
@@ -733,6 +820,7 @@
       metrica('Lendo...', 'Linhas', 'carregando') + metrica('Lendo...', 'Colunas', 'carregando') +
       metrica(UHNUI.tamanhoLegivel(planilha.tamanho), 'Tamanho');
     $('uso-codigo').textContent = trechoCodigo(planilha);
+    $('btn-baixar').href = '/api/planilhas/' + encodeURIComponent(planilha.nome) + '?baixar=1';
     $('detalhe-uso').hidden = false;
     $('btn-remover').hidden = !usuario || usuario.papel !== 'admin';
     $('tabela-barra').hidden = true;
@@ -1029,17 +1117,20 @@
 
       $('btn-remover').addEventListener('click', remover);
       $('env-fechar').addEventListener('click', () => $('env-fundo').classList.remove('aberto'));
-      $('btn-sel-todas').hidden = false;
-
-      $('btn-sel-todas').addEventListener('click', () => {
-        const visiveis = planilhasVisiveis();
-        const todasMarcadas = visiveis.length > 0 && visiveis.every(p => marcadas.has(p.nome));
-        visiveis.forEach(p => todasMarcadas ? marcadas.delete(p.nome) : marcadas.add(p.nome));
-        desenharLista();
-      });
-      $('btn-limpar-sel').addEventListener('click', () => { marcadas.clear(); desenharLista(); });
+      $('btn-excluir-sel').hidden = false;
       $('btn-excluir-sel').addEventListener('click', excluirSelecionadas);
     }
+
+    $('btn-sel-todas').addEventListener('click', () => {
+      const visiveis = planilhasVisiveis();
+      const todasMarcadas = visiveis.length > 0 && visiveis.every(p => marcadas.has(p.nome));
+      visiveis.forEach(p => todasMarcadas ? marcadas.delete(p.nome) : marcadas.add(p.nome));
+      desenharLista();
+    });
+    $('btn-limpar-sel').addEventListener('click', () => { marcadas.clear(); desenharLista(); });
+    $('btn-baixar-sel').addEventListener('click', baixarSelecionadas);
+    $('btn-exp-xlsx').addEventListener('click', () => exportarTabela('xlsx'));
+    $('btn-exp-csv').addEventListener('click', () => exportarTabela('csv'));
 
     $('btn-foco').addEventListener('click', () => {
       const layout = document.querySelector('.pl-layout');

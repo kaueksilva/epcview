@@ -17,6 +17,7 @@ const path = require('path');
 require('./lib/env')();   // .env local, antes de qualquer módulo que leia process.env
 
 const db = require('./lib/db');
+const { gerarZip } = require('./lib/zip');
 const { podeVerPagina, podeVerDashboard } = require('./lib/permissoes');
 
 const PORT = Number(process.env.PORT) || 8000;
@@ -272,6 +273,15 @@ async function rotaDashboards(req, res, segmentos, usuario) {
 // API: planilhas
 // ---------------------------------------------------------------------------
 
+/**
+ * Content-Disposition que funciona com acento no nome: o filename simples vai
+ * sem acentos (navegadores antigos), e o filename* leva o nome real em UTF-8.
+ */
+function anexo(nomeArquivo) {
+    const simples = nomeArquivo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]|["\\]/g, '_');
+    return 'attachment; filename="' + simples + "\"; filename*=UTF-8''" + encodeURIComponent(nomeArquivo);
+}
+
 /** Valida e limpa um nome de planilha; null se inválido. */
 function nomePlanilha(nome) {
     const limpo = path.basename(String(nome || '')).trim();
@@ -280,8 +290,9 @@ function nomePlanilha(nome) {
     return limpo;
 }
 
-async function rotaPlanilhas(req, res, segmentos, usuario) {
+async function rotaPlanilhas(req, res, segmentos, usuario, url) {
     exigirLogin(usuario);
+    const baixar = url.searchParams.has('baixar');   // ?baixar=1: salva como arquivo em vez de ser lido pelo runtime
     const nome = segmentos[2] ? decodeURIComponent(segmentos[2]) : null;
 
     if (req.method === 'GET' && !nome) { enviarJSON(res, 200, await db.listarPlanilhas()); return; }
@@ -295,7 +306,7 @@ async function rotaPlanilhas(req, res, segmentos, usuario) {
         const meta = await db.acharPlanilha(limpo);
         if (!meta) { enviarJSON(res, 404, { error: 'Planilha "' + nome + '" não encontrada.' }); return; }
         const etag = '"' + meta.sha256 + '"';
-        if (req.headers['if-none-match'] === etag) {
+        if (!baixar && req.headers['if-none-match'] === etag) {
             res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
             res.end();
             return;
@@ -306,7 +317,8 @@ async function rotaPlanilhas(req, res, segmentos, usuario) {
             'Content-Type': 'application/octet-stream',
             'Content-Length': arquivo.dados.length,
             'Cache-Control': 'no-cache',
-            ETag: etag
+            ETag: etag,
+            ...(baixar ? { 'Content-Disposition': anexo(limpo) } : {})
         });
         res.end(arquivo.dados);
         return;
@@ -333,6 +345,46 @@ async function rotaPlanilhas(req, res, segmentos, usuario) {
     }
 
     enviarJSON(res, 405, { error: 'Método não permitido.' });
+}
+
+/**
+ * GET /api/exportar/planilhas?nome=A.xlsx&nome=B.xls  (ou ?todas=1)
+ * Baixa as planilhas pedidas num .zip. É GET de propósito: o navegador trata
+ * como download normal, com a barra de progresso dele, sem passar tudo pela
+ * memória da página.
+ */
+async function rotaExportar(req, res, segmentos, usuario, url) {
+    exigirLogin(usuario);
+    if (req.method !== 'GET' || segmentos[2] !== 'planilhas') {
+        enviarJSON(res, 404, { error: 'Rota não encontrada.' });
+        return;
+    }
+
+    const existentes = await db.listarPlanilhas();
+    let nomes;
+    if (url.searchParams.has('todas')) {
+        nomes = existentes.map(p => p.nome);
+    } else {
+        const pedidos = new Set(url.searchParams.getAll('nome').map(nomePlanilha).filter(Boolean));
+        nomes = existentes.map(p => p.nome).filter(n => pedidos.has(n));
+    }
+    if (!nomes.length) { enviarJSON(res, 400, { error: 'Nenhuma planilha para exportar.' }); return; }
+
+    const arquivos = [];
+    for (const nome of nomes) {   // uma por vez: não abre 40 leituras grandes no banco ao mesmo tempo
+        const arquivo = await db.lerPlanilha(nome);
+        if (arquivo) arquivos.push({ nome, dados: arquivo.dados, data: new Date(arquivo.meta.atualizadoEm) });
+    }
+
+    const zip = gerarZip(arquivos);
+    const hoje = new Date().toISOString().slice(0, 10);
+    res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Length': zip.length,
+        'Cache-Control': 'no-store',
+        'Content-Disposition': anexo('planilhas-epcview-' + hoje + '.zip')
+    });
+    res.end(zip);
 }
 
 // ---------------------------------------------------------------------------
@@ -378,7 +430,8 @@ async function rotearApi(req, res, url, usuario) {
     if (recurso === 'sessao') return rotaSessao(req, res, segmentos, usuario);
     if (recurso === 'usuarios') return rotaUsuarios(req, res, segmentos, usuario);
     if (recurso === 'dashboards') return rotaDashboards(req, res, segmentos, usuario);
-    if (recurso === 'planilhas') return rotaPlanilhas(req, res, segmentos, usuario);
+    if (recurso === 'planilhas') return rotaPlanilhas(req, res, segmentos, usuario, url);
+    if (recurso === 'exportar') return rotaExportar(req, res, segmentos, usuario, url);
     if (recurso === 'grupos') return rotaGrupos(req, res, segmentos, usuario);
     if (recurso === 'config') return enviarJSON(res, 200, { sitePublico: SITE_PUBLICO });
 
