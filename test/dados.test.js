@@ -73,6 +73,63 @@ test('planilha maior que uma parte volta byte a byte igual', async () => {
     assert.equal(await db.lerPlanilha('P21 - Curva.xlsx'), null);
 });
 
+test('reenviar planilha guarda a anterior; restaurar troca as duas de lugar', async () => {
+    const v1 = Buffer.from('versao 1'), v2 = Buffer.from('versao 2 mais longa');
+    await db.salvarPlanilha('P30 - KPI.xlsx', v1, { id: 'a', nome: 'Ana' });
+    await db.salvarPlanilha('P30 - KPI.xlsx', v1, autor);           // mesmo conteúdo: não vira versão
+    assert.equal((await db.listarVersoesPlanilha('P30 - KPI.xlsx')).length, 0);
+
+    await db.salvarPlanilha('P30 - KPI.xlsx', v2, autor);
+    const versoes = await db.listarVersoesPlanilha('P30 - KPI.xlsx');
+    assert.equal(versoes.length, 1);
+    assert.equal(versoes[0].tamanho, v1.length);
+    assert.ok((await db.lerVersaoPlanilha('P30 - KPI.xlsx', versoes[0].id)).dados.equals(v1));
+    assert.ok((await db.lerPlanilha('P30 - KPI.xlsx')).dados.equals(v2));
+
+    await db.restaurarVersaoPlanilha('P30 - KPI.xlsx', versoes[0].id, autor);
+    assert.ok((await db.lerPlanilha('P30 - KPI.xlsx')).dados.equals(v1));
+    const depois = await db.listarVersoesPlanilha('P30 - KPI.xlsx');
+    assert.equal(depois.length, 1);                                  // a v2 foi para o histórico
+    assert.ok((await db.lerVersaoPlanilha('P30 - KPI.xlsx', depois[0].id)).dados.equals(v2));
+
+    // versão de outra planilha não é acessível por este nome
+    assert.equal(await db.lerVersaoPlanilha('Outra.xlsx', depois[0].id), null);
+});
+
+test('histórico de planilha guarda só as 5 últimas e some ao remover a planilha', async () => {
+    for (let i = 0; i < 8; i++) await db.salvarPlanilha('P40.xlsx', Buffer.from('conteudo ' + i), autor);
+    const versoes = await db.listarVersoesPlanilha('P40.xlsx');
+    assert.equal(versoes.length, 5);
+    assert.ok((await db.lerVersaoPlanilha('P40.xlsx', versoes[0].id)).dados.equals(Buffer.from('conteudo 6')));
+    await db.removerPlanilha('P40.xlsx');
+    assert.equal((await db.listarVersoesPlanilha('P40.xlsx')).length, 0);
+    const [{ total }] = await db.consultar('SELECT COUNT(*) AS total FROM planilha_versao_partes');
+    assert.equal(Number(total), 0);
+});
+
+test('usuário criado pelo admin precisa trocar a senha; a troca pela própria conta libera', async () => {
+    const g = await db.criarGrupo({ nome: 'Leitores' });
+    const u = await db.criarUsuario({ login: 'caio', nome: 'Caio', senha: 'inicial1', grupoId: g.id });
+    assert.equal(u.trocarSenha, true);
+
+    const { token } = await db.autenticar('caio', 'inicial1');
+    const outra = await db.autenticar('caio', 'inicial1');
+
+    await assert.rejects(() => db.trocarPropriaSenha(u.id, 'errada', 'NovaSenha9', token), /senha atual está incorreta/);
+    await assert.rejects(() => db.trocarPropriaSenha(u.id, 'inicial1', 'curta1', token), /pelo menos 8/);
+    await assert.rejects(() => db.trocarPropriaSenha(u.id, 'inicial1', 'semnumeros', token), /letras e números/);
+    await assert.rejects(() => db.trocarPropriaSenha(u.id, 'inicial1', 'inicial1', token), /pelo menos 8|diferente/);
+
+    const trocado = await db.trocarPropriaSenha(u.id, 'inicial1', 'NovaSenha9', token);
+    assert.equal(trocado.trocarSenha, false);
+    assert.ok(await db.usuarioDaSessao(token));                   // a sessão de onde trocou continua
+    assert.equal(await db.usuarioDaSessao(outra.token), null);    // as outras caem
+    assert.ok(await db.autenticar('caio', 'NovaSenha9'));
+
+    // admin redefine a senha: volta a exigir a troca
+    assert.equal((await db.atualizarUsuario(u.id, { senha: 'outra123' })).trocarSenha, true);
+});
+
 test('login cria sessão, e trocar a senha derruba as sessões abertas', async () => {
     const g = await db.criarGrupo({ nome: 'Adm', admin: true });
     const u = await db.criarUsuario({ login: 'ana', nome: 'Ana', senha: 'segredo1', grupoId: g.id });

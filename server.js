@@ -18,6 +18,7 @@ require('./lib/env')();   // .env local, antes de qualquer módulo que leia proc
 
 const db = require('./lib/db');
 const { gerarZip } = require('./lib/zip');
+const { criarLimitador } = require('./lib/limite');
 const { podeVerPagina, podeVerDashboard } = require('./lib/permissoes');
 
 const PORT = Number(process.env.PORT) || 8000;
@@ -126,6 +127,18 @@ function exigirLogin(usuario) {
     return usuario;
 }
 
+/**
+ * IP de quem fez o pedido. Na Hostinger o app fica atrás de um proxy, então o
+ * IP real vem no X-Forwarded-For (o primeiro da lista é o do navegador).
+ */
+function ipDaRequisicao(req) {
+    const encaminhado = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    return encaminhado || req.socket.remoteAddress || '?';
+}
+
+const limiteLogin = criarLimitador();
+setInterval(() => limiteLogin.limpar(), 10 * 60 * 1000).unref();
+
 function exigirAdmin(usuario) {
     exigirLogin(usuario);
     if (usuario.papel !== 'admin') {
@@ -148,12 +161,22 @@ async function rotaSessao(req, res, segmentos, usuario) {
 
     if (req.method === 'POST' && acao === 'login') {
         const { login, senha } = await lerJSON(req);
+        const ip = ipDaRequisicao(req);
+        const espera = limiteLogin.bloqueio(login, ip);
+        if (espera > 0) {
+            const minutos = Math.ceil(espera / 60000);
+            enviarJSON(res, 429, { error: 'Muitas tentativas erradas. Tente de novo em ' + minutos +
+                (minutos === 1 ? ' minuto.' : ' minutos.') }, { 'Retry-After': String(Math.ceil(espera / 1000)) });
+            return;
+        }
         const resultado = await db.autenticar(login, senha);
         if (!resultado) {
+            limiteLogin.falhou(login, ip);
             // Mensagem genérica de propósito: não revela se o login existe.
             enviarJSON(res, 401, { error: 'Login ou senha incorretos.' });
             return;
         }
+        limiteLogin.acertou(login);
         enviarJSON(res, 200, { usuario: comPermissoes(resultado.usuario) },
             { 'Set-Cookie': cookieSessao(resultado.token, Math.floor(db.DURACAO_SESSAO_MS / 1000)) });
         return;
@@ -168,6 +191,23 @@ async function rotaSessao(req, res, segmentos, usuario) {
     if (req.method === 'GET' && acao === 'eu') {
         if (!usuario) { enviarJSON(res, 401, { error: 'Sem sessão.' }); return; }
         enviarJSON(res, 200, { usuario: comPermissoes(usuario) });
+        return;
+    }
+
+    // "Minha conta": cada um troca a própria senha e ajusta nome/e-mail.
+    if (req.method === 'PUT' && acao === 'senha') {
+        exigirLogin(usuario);
+        const { senhaAtual, novaSenha } = await lerJSON(req);
+        const atualizado = await db.trocarPropriaSenha(usuario.id, senhaAtual, novaSenha, lerCookies(req)[NOME_COOKIE]);
+        enviarJSON(res, 200, { usuario: comPermissoes(atualizado) });
+        return;
+    }
+
+    if (req.method === 'PUT' && acao === 'conta') {
+        exigirLogin(usuario);
+        const { nome, email } = await lerJSON(req);
+        const atualizado = await db.atualizarPropriaConta(usuario.id, { nome, email });
+        enviarJSON(res, 200, { usuario: comPermissoes(atualizado) });
         return;
     }
 
@@ -216,6 +256,7 @@ async function rotaDashboards(req, res, segmentos, usuario) {
     const acao = segmentos[3] || null;   // /api/dashboards/:id/versoes | /restaurar | /duplicar
 
     if (id && acao === 'versoes' && req.method === 'GET') {
+        exigirAdmin(usuario);   // histórico é ferramenta de quem edita
         enviarJSON(res, 200, await db.listarVersoes(id));
         return;
     }
@@ -290,12 +331,63 @@ function nomePlanilha(nome) {
     return limpo;
 }
 
+/**
+ * Versões anteriores de uma planilha. Ver e baixar: quem acessa planilhas.
+ * Restaurar troca o dado que os painéis leem, então é só para admin.
+ */
+async function rotaVersoesPlanilha(req, res, segmentos, usuario, nome) {
+    const limpo = nomePlanilha(nome);
+    if (!limpo) { enviarJSON(res, 400, { error: 'Nome de planilha inválido.' }); return; }
+    const versaoId = segmentos[4] ? Number(segmentos[4]) : null;
+    if (segmentos[4] && !(Number.isInteger(versaoId) && versaoId > 0)) {
+        enviarJSON(res, 400, { error: 'Versão inválida.' });
+        return;
+    }
+
+    if (req.method === 'GET' && !versaoId) {
+        enviarJSON(res, 200, await db.listarVersoesPlanilha(limpo));
+        return;
+    }
+
+    if (req.method === 'GET' && versaoId && !segmentos[5]) {
+        const versao = await db.lerVersaoPlanilha(limpo, versaoId);
+        if (!versao) { enviarJSON(res, 404, { error: 'Versão não encontrada.' }); return; }
+        // "P21 - Curva.xlsx" de 08/10/2026 vira "P21 - Curva (versão 2026-10-08).xlsx"
+        const data = (versao.meta.atualizadoEm || '').slice(0, 10);
+        const ext = path.extname(limpo);
+        const nomeArquivo = limpo.slice(0, -ext.length) + ' (versão ' + data + ')' + ext;
+        res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': versao.dados.length,
+            'Cache-Control': 'no-store',
+            'Content-Disposition': anexo(nomeArquivo)
+        });
+        res.end(versao.dados);
+        return;
+    }
+
+    if (req.method === 'POST' && versaoId && segmentos[5] === 'restaurar') {
+        exigirAdmin(usuario);
+        const restaurada = await db.restaurarVersaoPlanilha(limpo, versaoId, usuario);
+        enviarJSON(res, 200, restaurada);
+        return;
+    }
+
+    enviarJSON(res, 405, { error: 'Método não permitido.' });
+}
+
 async function rotaPlanilhas(req, res, segmentos, usuario, url) {
     exigirLogin(usuario);
     const baixar = url.searchParams.has('baixar');   // ?baixar=1: salva como arquivo em vez de ser lido pelo runtime
     const nome = segmentos[2] ? decodeURIComponent(segmentos[2]) : null;
 
     if (req.method === 'GET' && !nome) { enviarJSON(res, 200, await db.listarPlanilhas()); return; }
+
+    // Histórico: /api/planilhas/:nome/versoes[/:id[/restaurar]]
+    if (nome && segmentos[3] === 'versoes') {
+        await rotaVersoesPlanilha(req, res, segmentos, usuario, nome);
+        return;
+    }
 
     if (req.method === 'GET' && nome) {
         const limpo = nomePlanilha(nome);
@@ -482,6 +574,21 @@ function servirEstatico(req, res, url, usuario) {
         return;
     }
 
+    if (usuario && ehPagina) {
+        // Senha definida pelo admin: antes de qualquer outra tela, o usuário escolhe a dele.
+        if (usuario.trocarSenha && caminho !== '/conta.html' && caminho !== '/login.html') {
+            res.writeHead(302, { Location: '/conta.html?obrigatorio=1' });
+            res.end();
+            return;
+        }
+        // O editor cria, altera e exclui painéis: nem chega a ser entregue a quem não é admin.
+        if (caminho === '/index.html' && usuario.papel !== 'admin') {
+            res.writeHead(302, { Location: '/lista_dashboards.html' });
+            res.end();
+            return;
+        }
+    }
+
     fs.readFile(abs, (err, dados) => {
         if (err) {
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -582,6 +689,11 @@ const server = http.createServer(async (req, res) => {
 
     try {
         if (url.pathname.startsWith('/api/')) {
+            // Com troca de senha pendente, só a sessão (login, logout, "eu", trocar senha) responde.
+            if (usuario && usuario.trocarSenha && !url.pathname.startsWith('/api/sessao/') && url.pathname !== '/api/config') {
+                enviarJSON(res, 403, { error: 'Troque sua senha para continuar.', codigo: 'TROCAR_SENHA' });
+                return;
+            }
             await rotearApi(req, res, url, usuario);
             return;
         }

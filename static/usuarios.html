@@ -180,7 +180,7 @@
       <div class="grupo">
         <label class="rotulo" for="f-senha">Senha</label>
         <input class="campo" id="f-senha" type="text" placeholder="mínimo 6 caracteres" autocomplete="new-password">
-        <p class="dica" id="dica-senha">Anote e entregue ao usuário — ela não é exibida de novo.</p>
+        <p class="dica" id="dica-senha">Anote e entregue ao usuário — ela não é exibida de novo. No primeiro acesso, ele troca por uma senha própria.</p>
       </div>
 
       <div class="grupo" id="grupo-campo-grupo">
@@ -388,8 +388,8 @@
     $('grupo-login').style.display = usuario ? 'none' : 'block';
     $('f-senha').placeholder = usuario ? 'deixe em branco para manter' : 'mínimo 6 caracteres';
     $('dica-senha').textContent = usuario
-      ? 'Trocar a senha encerra as sessões abertas deste usuário.'
-      : 'Anote e entregue ao usuário — ela não é exibida de novo.';
+      ? 'Trocar a senha encerra as sessões abertas deste usuário, e ele cria uma senha própria no próximo acesso.'
+      : 'Anote e entregue ao usuário — ela não é exibida de novo. No primeiro acesso, ele troca por uma senha própria.';
 
     $('modal').style.display = 'grid';
     $('f-nome').focus();

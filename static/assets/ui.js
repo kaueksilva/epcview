@@ -24,6 +24,8 @@
         { chave: 'usuarios', secao: 'admin', href: 'usuarios.html', rotulo: 'Usuários', somenteAdmin: true, icone:
             '<path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/>' +
             '<path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16.5 3.6a4 4 0 0 1 0 7.3"/>' },
+        { chave: 'conta', secao: 'conta', href: 'conta.html', rotulo: 'Minha conta', icone:
+            '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>' },
     ];
 
     const icone = (caminho, tamanho) =>
@@ -31,7 +33,7 @@
         'stroke-linecap="round" stroke-linejoin="round" style="width:' + (tamanho || 17) + 'px;height:' +
         (tamanho || 17) + 'px;flex-shrink:0">' + caminho + '</svg>';
 
-    const SECOES = { plataforma: 'Plataforma', admin: 'Administração' };
+    const SECOES = { plataforma: 'Plataforma', admin: 'Administração', conta: 'Conta' };
 
     /** O "V" da marca: um vetor, com o degradê azul institucional → ciano. */
     const V_MARCA =

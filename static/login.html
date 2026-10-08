@@ -409,7 +409,8 @@ fetch('/api/config').then(r => r.json()).then(cfg => {
         document.getElementById('senha').focus();
         return;
       }
-      location.href = destinoSeguro();
+      // Senha definida pelo admin: primeiro o usuário cria a dele.
+      location.href = corpo.usuario && corpo.usuario.trocarSenha ? '/conta.html?obrigatorio=1' : destinoSeguro();
     } catch (err) {
       mostrarAviso('Servidor fora do ar. Verifique se o sistema está rodando.');
     } finally {

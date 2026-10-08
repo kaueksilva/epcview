@@ -60,12 +60,23 @@ servidor — um novo deploy não apaga painéis, usuários nem planilhas.
 |---|---|---|
 | Abrir painéis | ✅ | ✅ |
 | Ver planilhas | ✅ | ✅ |
-| Criar e editar painéis | — | ✅ |
-| Enviar e remover planilhas | — | ✅ |
-| Gerenciar usuários | — | ✅ |
+| Baixar e exportar planilhas, ver o histórico | ✅ | ✅ |
+| Trocar a própria senha (Minha conta) | ✅ | ✅ |
+| Criar, editar, duplicar e excluir painéis | — | ✅ |
+| Enviar, remover e restaurar versões de planilhas | — | ✅ |
+| Gerenciar usuários e grupos | — | ✅ |
 
 O menu lateral e os botões se ajustam ao papel, e o servidor recusa por conta
-própria — esconder o botão nunca é a única proteção.
+própria — esconder o botão nunca é a única proteção. O editor (`/index.html`)
+nem é entregue a quem não é admin. `test/http.test.js` sobe o servidor e
+confere essas travas por HTTP.
+
+**Senha definida pelo admin.** Usuário criado (ou com a senha redefinida) por um
+administrador cai em *Minha conta* no primeiro acesso e só usa o resto do
+sistema depois de criar a própria senha (8+ caracteres, letras e números).
+
+**Limite de login.** 5 senhas erradas para o mesmo login, ou 20 do mesmo IP, em
+15 minutos bloqueiam novas tentativas por 15 minutos (`lib/limite.js`).
 
 ## Telas
 
@@ -78,6 +89,7 @@ própria — esconder o botão nunca é a única proteção.
 | Editor | `/index.html` | admin |
 | Planilhas | `/planilhas.html` | todos (envio: admin) |
 | Usuários | `/usuarios.html` | admin |
+| Minha conta | `/conta.html` | todos |
 
 ## Site público
 
@@ -137,6 +149,7 @@ Tudo no MySQL (`lib/db.js`):
 | `dashboards` | painéis publicados (código JS) |
 | `dashboard_versoes` | histórico — as últimas 15 versões de cada painel |
 | `planilhas` / `planilha_partes` | os arquivos, gravados em pedaços de 2 MB |
+| `planilha_versoes` / `planilha_versao_partes` | histórico — as 5 versões anteriores de cada planilha |
 
 As senhas são guardadas com `scrypt` e salt por usuário; o hash nunca sai nas
 respostas da API. As planilhas são divididas em partes porque hospedagem
@@ -193,10 +206,14 @@ escreve é o que a equipe recebe. O código nunca é interpolado em string: vai 
 |---|---|---|
 | `POST` | `/api/sessao/login` · `/logout` | todos |
 | `GET` | `/api/sessao/eu` | autenticado |
+| `PUT` | `/api/sessao/senha` · `/conta` | autenticado (a própria conta) |
 | `GET` | `/api/dashboards` · `/:id` | autenticado |
-| `POST`/`DELETE` | `/api/dashboards` · `/:id` | admin |
-| `GET` | `/api/planilhas` · `/:nome` | autenticado |
-| `POST`/`DELETE` | `/api/planilhas/:nome` | admin |
+| `POST`/`PUT`/`DELETE` | `/api/dashboards` · `/:id` · `/:id/duplicar` · `/:id/restaurar` | admin |
+| `GET` | `/api/dashboards/:id/versoes` | admin |
+| `GET` | `/api/planilhas` · `/:nome` · `/:nome/versoes` · `/:nome/versoes/:id` | autenticado |
+| `POST`/`DELETE` | `/api/planilhas/:nome` · `/:nome/versoes/:id/restaurar` | admin |
+| `GET` | `/api/exportar/planilhas?nome=…` ou `?todas=1` (.zip) | autenticado |
+| `GET` | `/api/saude` | todos |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/usuarios` · `/:id` | admin |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/grupos` · `/:id` | admin |
 

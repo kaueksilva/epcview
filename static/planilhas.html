@@ -356,6 +356,31 @@
   @keyframes env-entrar { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
   .env-concluido { animation: env-entrar .3s cubic-bezier(.34, 1.56, .64, 1) both; }
 
+  /* Histórico de versões ---------------------------------------------------- */
+  .hist-fundo { z-index: 170; }   /* acima da planilha em tela cheia, abaixo da confirmação */
+  .hist-fundo[hidden] { display: none; }
+  .hist { max-width: 34rem; padding: var(--space-6); max-height: 85dvh; display: flex; flex-direction: column; }
+  .hist .modal-texto { margin-bottom: var(--space-4); }
+  .hist-lista { overflow-y: auto; margin: 0 calc(-1 * var(--space-2)); padding: 0 var(--space-2); }
+  .hist-item {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3) 0; border-top: 1px solid var(--border);
+  }
+  .hist-item.atual { background: var(--primary-soft); margin: 0 calc(-1 * var(--space-2)); padding: var(--space-3) var(--space-2); border-radius: var(--radius-sm); border-top: 0; }
+  .hist-texto { flex: 1; min-width: 0; }
+  .hist-texto strong { display: block; font-size: var(--text-sm); }
+  .hist-texto span { display: block; margin-top: 2px; font-size: var(--text-xs); color: var(--text-light); }
+  .hist-etiqueta { font-size: 10.5px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .05em; }
+  .hist-acoes { display: flex; gap: var(--space-2); flex-shrink: 0; }
+  .hist-acoes .pl-acao { height: 32px; }
+  .hist-vazio { padding: var(--space-5) 0; text-align: center; font-size: var(--text-sm); color: var(--text-light); border-top: 1px solid var(--border); }
+  @media (max-width: 600px) {
+    .hist { padding: var(--space-5) var(--space-4); }
+    .hist-item { flex-wrap: wrap; }
+    .hist-acoes { width: 100%; }
+    .hist-acoes .pl-acao { flex: 1; justify-content: center; }
+  }
+
   /* Botão "voltar": só existe na planilha em tela cheia (telas pequenas) */
   .pl-voltar {
     display: none; place-items: center; flex-shrink: 0;
@@ -603,6 +628,13 @@
                   </svg>
                   <span>Baixar</span>
                 </a>
+                <button class="pl-acao" id="btn-historico" title="Versões anteriores desta planilha">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>
+                  </svg>
+                  <span>Histórico</span>
+                </button>
                 <button class="pl-acao" id="btn-foco" title="Ampliar a área da tabela">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                        stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
@@ -667,6 +699,17 @@
     <div class="env-lista" id="env-lista"></div>
     <div class="env-rodape" id="env-rodape" hidden>
       <button class="btn btn-primario" id="env-fechar">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo hist-fundo" id="hist-fundo" hidden>
+  <div class="modal hist" role="dialog" aria-modal="true" aria-labelledby="hist-titulo">
+    <h2 class="modal-titulo" id="hist-titulo">Histórico</h2>
+    <p class="modal-texto" id="hist-sub"></p>
+    <div class="hist-lista" id="hist-lista"></div>
+    <div class="modal-acoes" style="margin-top:var(--space-5)">
+      <button type="button" class="btn btn-contorno" id="hist-fechar">Fechar</button>
     </div>
   </div>
 </div>
@@ -930,7 +973,9 @@
       colunasAbertas.forEach(c => {
         const td = document.createElement('td');
         const v = linha[c];
-        const texto = (v === null || v === undefined) ? '' : String(v);
+        const texto = (v === null || v === undefined) ? ''
+          : v instanceof Date ? formatarData(v)   // senão sai "Fri May 01 2026 00:00:00 GMT..."
+          : String(v);
         td.textContent = texto;
         if (texto.length > 30) td.title = texto;
         tr.appendChild(td);
@@ -971,9 +1016,16 @@
   let fichaIndices = [];
   let fichaPosicao = -1;
 
+  /** Data da planilha em pt-BR; só mostra a hora quando ela existe (meia-noite = só a data). */
+  function formatarData(d) {
+    if (isNaN(d)) return '';
+    const temHora = d.getHours() || d.getMinutes() || d.getSeconds();
+    return temHora ? d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString('pt-BR');
+  }
+
   function textoDoValor(v) {
     if (v === null || v === undefined || v === '') return null;
-    if (v instanceof Date) return isNaN(v) ? null : v.toLocaleString('pt-BR');
+    if (v instanceof Date) return isNaN(v) ? null : formatarData(v);
     if (typeof v === 'number') return v.toLocaleString('pt-BR', { maximumFractionDigits: 6 });
     return String(v);
   }
@@ -1011,6 +1063,131 @@
 
   function fecharFicha() {
     $('ficha-fundo').classList.remove('aberto');
+  }
+
+  // ---------------------------------------------------------------------
+  // Histórico: as últimas versões de cada planilha, para desfazer um envio errado
+  // ---------------------------------------------------------------------
+
+  function urlVersoes(nome) {
+    return '/api/planilhas/' + encodeURIComponent(nome) + '/versoes';
+  }
+
+  function dataHora(iso) {
+    return iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  }
+
+  function itemHistorico({ titulo, detalhe, atual, versao }) {
+    const item = document.createElement('div');
+    item.className = 'hist-item' + (atual ? ' atual' : '');
+    const texto = document.createElement('div');
+    texto.className = 'hist-texto';
+    if (atual) {
+      const et = document.createElement('span');
+      et.className = 'hist-etiqueta';
+      et.textContent = 'Versão atual';
+      texto.appendChild(et);
+    }
+    const t = document.createElement('strong');
+    t.textContent = titulo;
+    const d = document.createElement('span');
+    d.textContent = detalhe;
+    texto.append(t, d);
+    item.appendChild(texto);
+
+    if (versao) {
+      const acoes = document.createElement('div');
+      acoes.className = 'hist-acoes';
+      const baixar = document.createElement('a');
+      baixar.className = 'pl-acao';
+      baixar.href = urlVersoes(aberta.nome) + '/' + versao.id;
+      baixar.textContent = 'Baixar';
+      acoes.appendChild(baixar);
+      if (usuario && usuario.papel === 'admin') {
+        const restaurar = document.createElement('button');
+        restaurar.type = 'button';
+        restaurar.className = 'pl-acao';
+        restaurar.textContent = 'Restaurar';
+        restaurar.addEventListener('click', () => restaurarVersao(versao));
+        acoes.appendChild(restaurar);
+      }
+      item.appendChild(acoes);
+    }
+    return item;
+  }
+
+  async function abrirHistorico() {
+    if (!aberta) return;
+    const planilha = aberta;
+    $('hist-titulo').textContent = 'Histórico';
+    $('hist-sub').textContent = planilha.nome;
+    const lista = $('hist-lista');
+    lista.innerHTML = '<p class="hist-vazio">Carregando...</p>';
+    $('hist-fundo').hidden = false;
+
+    try {
+      const resp = await fetch(urlVersoes(planilha.nome), { credentials: 'same-origin' });
+      const versoes = await resp.json();
+      if (!resp.ok) throw new Error(versoes.error || 'Não foi possível ler o histórico.');
+      if (aberta !== planilha) return;
+
+      lista.innerHTML = '';
+      lista.appendChild(itemHistorico({
+        atual: true,
+        titulo: 'Enviada em ' + dataHora(planilha.atualizadoEm),
+        detalhe: UHNUI.tamanhoLegivel(planilha.tamanho) +
+          (planilha.enviadoPor && planilha.enviadoPor.nome ? ' · por ' + planilha.enviadoPor.nome : '')
+      }));
+      if (!versoes.length) {
+        const p = document.createElement('p');
+        p.className = 'hist-vazio';
+        p.textContent = 'Nenhuma versão anterior. Quando esta planilha for reenviada, a versão de agora fica guardada aqui.';
+        lista.appendChild(p);
+        return;
+      }
+      versoes.forEach(v => lista.appendChild(itemHistorico({
+        versao: v,
+        titulo: 'Enviada em ' + dataHora(v.atualizadoEm),
+        detalhe: UHNUI.tamanhoLegivel(v.tamanho) +
+          (v.enviadoPor && v.enviadoPor.nome ? ' · por ' + v.enviadoPor.nome : '') +
+          ' · substituída em ' + dataHora(v.substituidaEm)
+      })));
+    } catch (err) {
+      lista.innerHTML = '';
+      const p = document.createElement('p');
+      p.className = 'hist-vazio';
+      p.textContent = err.message;
+      lista.appendChild(p);
+    }
+  }
+
+  function fecharHistorico() {
+    $('hist-fundo').hidden = true;
+  }
+
+  async function restaurarVersao(versao) {
+    const planilha = aberta;
+    const ok = await UHNUI.confirmar({
+      titulo: 'Restaurar versão',
+      texto: 'A versão enviada em ' + dataHora(versao.atualizadoEm) + ' volta a ser a atual, e os painéis passam a ler ela.\n' +
+             'A versão de agora fica guardada no histórico — dá para desfazer.',
+      confirmar: 'Restaurar'
+    });
+    if (!ok) return;
+    try {
+      const resp = await fetch(urlVersoes(planilha.nome) + '/' + versao.id + '/restaurar', {
+        method: 'POST', credentials: 'same-origin'
+      });
+      const dados = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(dados.error || 'Não foi possível restaurar.');
+      UHNUI.aviso('Versão restaurada.', 'sucesso');
+      UHN.limparCache();
+      await carregar();
+      const atualizada = planilhas.find(p => p.nome === planilha.nome);
+      if (atualizada) { await abrir(atualizada); abrirHistorico(); }
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    }
   }
 
   async function abrir(planilha) {
@@ -1364,6 +1541,11 @@
       clearTimeout(esperaFiltro);
       esperaFiltro = setTimeout(desenharTabela, 150);   // planilhas grandes: não refiltra a cada tecla
     });
+
+    $('btn-historico').addEventListener('click', abrirHistorico);
+    $('hist-fechar').addEventListener('click', fecharHistorico);
+    $('hist-fundo').addEventListener('click', e => { if (e.target === $('hist-fundo')) fecharHistorico(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('hist-fundo').hidden) fecharHistorico(); });
 
     $('btn-voltar').addEventListener('click', voltarParaLista);
     window.addEventListener('popstate', e => {

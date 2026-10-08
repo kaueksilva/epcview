@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha conta · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  .ct-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); align-items: start; max-width: 60rem; }
+  .ct-cartao { padding: var(--space-6); }
+  .ct-cartao h2 { margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: 700; }
+  .ct-cartao > p { margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }
+  .ct-cartao .grupo + .grupo { margin-top: var(--space-4); }
+  .ct-acoes { display: flex; justify-content: flex-end; margin-top: var(--space-5); }
+  .ct-info { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-4); margin: 0 0 var(--space-5); font-size: var(--text-sm); }
+  .ct-info dt { color: var(--text-light); }
+  .ct-info dd { margin: 0; font-weight: 600; color: var(--text); }
+
+  .ct-aviso {
+    display: flex; gap: var(--space-3); align-items: flex-start;
+    max-width: 60rem; margin-bottom: var(--space-5); padding: var(--space-4);
+    border: 1px solid rgba(245, 166, 35, .45); border-radius: var(--radius-md);
+    background: #fff8eb; color: #7a4b00; font-size: var(--text-sm); line-height: 1.5;
+  }
+  .ct-aviso[hidden] { display: none; }
+  .ct-aviso strong { display: block; color: #5c3800; }
+
+  /* Medidor de força da senha */
+  .ct-regras { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-xs); color: var(--text-light); }
+  .ct-regras li::before { content: '○'; display: inline-block; width: 1.2em; }
+  .ct-regras li.ok { color: var(--green-dark); }
+  .ct-regras li.ok::before { content: '✓'; }
+
+  /* Só o formulário de senha quando a troca é obrigatória */
+  body.ct-obrigatorio .ct-grade { grid-template-columns: minmax(0, 32rem); }
+  body.ct-obrigatorio #cartao-dados { display: none; }
+
+  @media (max-width: 900px) {
+    .ct-grade { grid-template-columns: minmax(0, 1fr); }
+    .ct-cartao { padding: var(--space-5) var(--space-4); }
+    .campo { font-size: 16px; }   /* evita o zoom do iPhone ao focar */
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+    <header class="topo">
+      <div>
+        <h1>Minha conta</h1>
+        <p id="resumo">Seus dados de acesso.</p>
+      </div>
+    </header>
+
+    <div class="corpo">
+      <div class="ct-aviso" id="aviso-obrigatorio" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" style="width:20px;height:20px;flex-shrink:0">
+          <path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5h.01"/>
+        </svg>
+        <div>
+          <strong>Crie a sua senha para continuar</strong>
+          A senha que você usou foi definida por um administrador. Escolha uma senha só sua — depois disso o sistema libera as outras telas.
+        </div>
+      </div>
+
+      <div class="ct-grade">
+        <section class="cartao ct-cartao" id="cartao-dados">
+          <h2>Seus dados</h2>
+          <p>Nome e e-mail aparecem para os administradores. Grupo e permissões são definidos por eles.</p>
+          <dl class="ct-info">
+            <dt>Login</dt><dd id="info-login">—</dd>
+            <dt>Grupo</dt><dd id="info-grupo">—</dd>
+            <dt>Acesso</dt><dd id="info-papel">—</dd>
+          </dl>
+          <form id="form-dados">
+            <div class="grupo">
+              <label class="rotulo" for="f-nome">Nome</label>
+              <input class="campo" id="f-nome" type="text" maxlength="80" required autocomplete="name">
+            </div>
+            <div class="grupo">
+              <label class="rotulo" for="f-email">E-mail <span style="font-weight:400;color:var(--texto-3)">(opcional)</span></label>
+              <input class="campo" id="f-email" type="email" maxlength="190" autocomplete="email">
+            </div>
+            <div class="ct-acoes">
+              <button type="submit" class="btn btn-primario" id="btn-dados">Salvar dados</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="cartao ct-cartao">
+          <h2>Trocar senha</h2>
+          <p>Ao trocar, os outros aparelhos onde você estiver conectado são desconectados.</p>
+          <form id="form-senha">
+            <!-- campo de usuário escondido: ajuda o gerenciador de senhas do navegador -->
+            <input type="text" id="f-usuario" autocomplete="username" hidden>
+            <div class="grupo">
+              <label class="rotulo" for="f-atual">Senha atual</label>
+              <input class="campo" id="f-atual" type="password" required autocomplete="current-password">
+            </div>
+            <div class="grupo">
+              <label class="rotulo" for="f-nova">Nova senha</label>
+              <input class="campo" id="f-nova" type="password" required autocomplete="new-password">
+              <ul class="ct-regras" id="regras">
+                <li data-regra="tamanho">Pelo menos 8 caracteres</li>
+                <li data-regra="letra">Pelo menos uma letra</li>
+                <li data-regra="numero">Pelo menos um número</li>
+              </ul>
+            </div>
+            <div class="grupo">
+              <label class="rotulo" for="f-confirma">Repita a nova senha</label>
+              <input class="campo" id="f-confirma" type="password" required autocomplete="new-password">
+            </div>
+            <div class="ct-acoes">
+              <button type="submit" class="btn btn-primario" id="btn-senha">Trocar senha</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/ui.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const obrigatorio = new URLSearchParams(location.search).has('obrigatorio');
+  let usuario = null;
+  let trocaPendente = false;   // senha definida pelo admin: depois de trocar, segue para o início
+
+  const REGRAS = {
+    tamanho: s => s.length >= 8,
+    letra: s => /[A-Za-z]/.test(s),
+    numero: s => /\d/.test(s)
+  };
+
+  function conferirRegras() {
+    const senha = $('f-nova').value;
+    let todas = true;
+    document.querySelectorAll('#regras li').forEach(li => {
+      const ok = REGRAS[li.dataset.regra](senha);
+      li.classList.toggle('ok', ok);
+      todas = todas && ok;
+    });
+    return todas;
+  }
+
+  function preencher(u) {
+    usuario = u;
+    $('info-login').textContent = u.login;
+    $('info-grupo').textContent = u.grupoNome || '—';
+    $('info-papel').textContent = u.papel === 'admin' ? 'Administrador' : 'Visualizador';
+    $('f-nome').value = u.nome || '';
+    $('f-email').value = u.email || '';
+    $('f-usuario').value = u.login;
+  }
+
+  async function enviar(url, corpo) {
+    const resp = await fetch(url, {
+      method: 'PUT', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo)
+    });
+    const dados = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(dados.error || 'Não foi possível salvar.');
+    return dados;
+  }
+
+  $('f-nova').addEventListener('input', conferirRegras);
+
+  $('form-senha').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!conferirRegras()) { UHNUI.aviso('A nova senha não atende aos requisitos.', 'alerta'); return; }
+    if ($('f-nova').value !== $('f-confirma').value) { UHNUI.aviso('As duas senhas novas não são iguais.', 'alerta'); return; }
+
+    const botao = $('btn-senha');
+    botao.disabled = true;
+    try {
+      const { usuario: atualizado } = await enviar('/api/sessao/senha',
+        { senhaAtual: $('f-atual').value, novaSenha: $('f-nova').value });
+      $('form-senha').reset();
+      conferirRegras();
+      preencher(atualizado);
+      UHNUI.aviso('Senha trocada.', 'sucesso');
+      // Troca obrigatória feita: o sistema está liberado, segue para o início.
+      if (obrigatorio || trocaPendente) setTimeout(() => { location.href = 'lista_dashboards.html'; }, 900);
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
+  $('form-dados').addEventListener('submit', async e => {
+    e.preventDefault();
+    const botao = $('btn-dados');
+    botao.disabled = true;
+    try {
+      const { usuario: atualizado } = await enviar('/api/sessao/conta',
+        { nome: $('f-nome').value, email: $('f-email').value });
+      preencher(atualizado);
+      UHNUI.aviso('Dados salvos.', 'sucesso');
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
+  (async function iniciar() {
+    const u = await UHNUI.montarBarraLateral('conta');
+    if (!u) return;
+    preencher(u);
+    if (u.trocarSenha) {
+      trocaPendente = true;
+      document.body.classList.add('ct-obrigatorio');
+      $('aviso-obrigatorio').hidden = false;
+      $('resumo').textContent = 'Primeiro acesso: defina a sua senha.';
+      $('f-atual').focus();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
