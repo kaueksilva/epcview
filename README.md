@@ -14,22 +14,45 @@ EPCVIEW (paleta e tokens em `static/style.css`).
 ## Como rodar
 
 ```bash
-node server.js
+npm install          # única dependência: mysql2
+cp .env.example .env # e preencha DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+npm start
 ```
 
-Sem dependências e sem `npm install` — só Node.js. Painel em
-http://localhost:8000/login.html.
+Painel em http://localhost:8000/login.html · site público em http://localhost:8000/.
 
-Site público em http://localhost:8000/.
+Tudo fica num banco **MySQL/MariaDB** — o mesmo da Hostinger. Rodando no seu
+computador, o sistema conecta no banco de produção pela rede, então local e
+hospedado veem exatamente os mesmos usuários, painéis e planilhas. As tabelas
+são criadas sozinhas na primeira execução.
 
-> Para desligar o site público, defina `SITE_PUBLICO=0` no `.env` (ou no
-> Environment do Render): a raiz `/` passa a levar ao login (ou aos dashboards,
-> com sessão), `/site/` responde 404 e os links "Voltar ao site" / "Ver site
-> público" ficam ocultos.
+Para conectar do seu computador, a Hostinger precisa liberar o acesso remoto:
+**hPanel → Bancos de dados → MySQL remoto** → adicione o seu IP (ou `%` para
+qualquer IP) no banco `u504642026_epc`. O host a usar em `DB_HOST` aparece na
+mesma tela (algo como `srv1234.hstgr.io` ou um IP).
 
-Na primeira execução o sistema cria o usuário `admin` e **imprime a senha no
+> Para desligar o site público, defina `SITE_PUBLICO=0` no `.env` (ou nas
+> variáveis da hospedagem): a raiz `/` passa a levar ao login (ou aos
+> dashboards, com sessão), `/site/` responde 404 e os links "Voltar ao site" /
+> "Ver site público" ficam ocultos.
+
+Com o banco vazio, o sistema cria o usuário `admin` e **imprime a senha no
 console uma única vez**. Anote: ela não é exibida de novo. Não há credencial
 padrão embutida no código.
+
+### Deploy na Hostinger
+
+App Node.js no hPanel, apontando para este repositório, com:
+
+| Campo | Valor |
+|---|---|
+| Comando de build | `npm install` |
+| Arquivo de entrada / start | `server.js` / `npm start` |
+| Node | 20 ou mais novo |
+| Variáveis | `DB_HOST=localhost`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` |
+
+A porta vem da variável `PORT` que a Hostinger define. Nada fica no disco do
+servidor — um novo deploy não apaga painéis, usuários nem planilhas.
 
 ## Quem faz o quê
 
@@ -104,31 +127,38 @@ elemento `#dash-root` onde o painel é renderizado.
 
 ## Onde ficam os dados
 
+Tudo no MySQL (`lib/db.js`):
+
+| Tabela | O quê |
+|---|---|
+| `grupos` | nome, se é admin, páginas e painéis liberados |
+| `usuarios` | login, nome, e-mail, grupo, hash da senha, último acesso |
+| `sessoes` | tokens de login (12 h) |
+| `dashboards` | painéis publicados (código JS) |
+| `dashboard_versoes` | histórico — as últimas 15 versões de cada painel |
+| `planilhas` / `planilha_partes` | os arquivos, gravados em pedaços de 2 MB |
+
+As senhas são guardadas com `scrypt` e salt por usuário; o hash nunca sai nas
+respostas da API. As planilhas são divididas em partes porque hospedagem
+compartilhada limita o tamanho de cada comando enviado ao MySQL; ao baixar,
+o servidor manda um `ETag` com o hash do arquivo, e o navegador não baixa de
+novo uma planilha que não mudou.
+
+Escritas que mexem em mais de uma tabela (trocar senha e derrubar sessões,
+publicar painel e arquivar a versão anterior, substituir as partes de uma
+planilha) rodam numa transação: ou entra tudo, ou nada.
+
+## Testes
+
+Rodam contra um banco **de teste** — o nome precisa conter `test`, e o código
+se recusa a limpar qualquer outro. Com Docker:
+
+```bash
+docker run -d --name epcview-mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=epc_test -p 3307:3306 mysql:8.0
+TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=3307 TEST_DB_USER=root TEST_DB_PASSWORD=root TEST_DB_NAME=epc_test npm test
 ```
-data/database.json   usuários, grupos e painéis publicados
-lib/r2.js            cliente do Cloudflare R2 — onde as planilhas moram
-static/              as páginas
-lib/db.js            camada de acesso ao banco
-backup/              material de versões anteriores — fora do git
-```
 
-O `database.json` é gravado de forma atômica (escreve num `.tmp` e renomeia), e
-as gravações são serializadas numa fila — dois pedidos simultâneos não se
-sobrescrevem. As senhas são guardadas com `scrypt` e salt por usuário; o hash
-nunca sai nas respostas da API.
-
-**Planilhas ficam no Cloudflare R2**, não no disco: são dados de obra, pesam
-dezenas de MB e mudam a cada medição — versioná-las no git criaria uma cópia
-nova para sempre no histórico. O R2 é um balde único (plano free, 10GB)
-acessado tanto local quanto do Render, então local e hospedado sempre veem as
-mesmas planilhas e nada some entre deploys/reinícios. Configure as 4
-variáveis `R2_*` num `.env` local (copie de `.env.example`) e, no Render, no
-painel do serviço em Environment — nunca commitar essas credenciais.
-
-**O que vai para o git:** o código e o `database.json` (painéis e usuários).
-No plano gratuito do Render, o disco é efêmero: qualquer painel criado pela
-tela que não for commitado de volta no `database.json` se perde no próximo
-deploy/reinício. As planilhas não têm esse problema porque vivem no R2.
+Sem `TEST_DB_NAME`, os testes que precisam de banco são pulados.
 
 ## Painéis já publicados
 
@@ -139,22 +169,15 @@ deploy/reinício. As planilhas não têm esse problema porque vivem no R2.
 | Painel Executivo de SMS | P31–P36 |
 
 O painel de SMS foi traduzido de Streamlit/Altair/pandas para JavaScript. Ele
-exige as planilhas **P31 a P36**, que ainda não estão em `planilhas/`; até lá
-exibe um aviso pedindo a importação, sem quebrar. Para vê-lo com dados
-fictícios:
-
-```bash
-cp "backup/planilhas-exemplo-sms/"*.xlsx planilhas/
-```
-
-Esses arquivos são **dados de teste**, não da obra — remova antes de subir os reais.
+exige as planilhas **P31 a P36**; sem elas exibe um aviso pedindo a importação,
+sem quebrar.
 
 ## Arquitetura
 
 Existe **um** runtime, não um HTML por painel:
 
 ```
-data/database.json ──> viewer.html ──postMessage──> sandbox.html
+MySQL (dashboards) ──> viewer.html ──postMessage──> sandbox.html
                                                         │
                         assets/uhn-runtime.js ──────────┘
                         (consultar / cache / normalização)
@@ -189,5 +212,8 @@ Dois pontos a considerar antes de expor fora da rede interna:
 
 - **Um painel é código** que roda no navegador de quem o abrir. Só
   administradores publicam, e é por isso que esse papel deve ser restrito.
-- **O servidor fala HTTP puro.** Em rede aberta, coloque-o atrás de um proxy
-  com TLS — sem HTTPS, a senha trafega em texto claro.
+- **O servidor fala HTTP puro.** Na Hostinger o HTTPS é feito pelo proxy da
+  hospedagem; em outro lugar, coloque-o atrás de um proxy com TLS — sem HTTPS,
+  a senha trafega em texto claro.
+- **MySQL remoto liberado para `%`** aceita conexões de qualquer IP (protegidas
+  só pela senha). Prefira liberar apenas o seu IP.

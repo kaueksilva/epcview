@@ -726,7 +726,8 @@
     $('detalhe-titulo').textContent = planilha.nome;
     $('detalhe-sub').textContent = planilha.atualizadoEm
       ? 'Atualizada ' + UHNUI.dataRelativa(planilha.atualizadoEm) + ' · ' +
-        new Date(planilha.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+        new Date(planilha.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) +
+        (planilha.enviadoPor && planilha.enviadoPor.nome ? ' · por ' + planilha.enviadoPor.nome : '')
       : '';
     $('detalhe-metricas').innerHTML =
       metrica('Lendo...', 'Linhas', 'carregando') + metrica('Lendo...', 'Colunas', 'carregando') +

@@ -4,21 +4,19 @@
  *   - Site público institucional em / (static/site/), sem login.
  *   - Painel administrativo (dashboards, planilhas, usuários) atrás de login.
  *   - Autenticação por sessão (cookie httpOnly), com papéis admin/visualizador.
- *   - CRUD de dashboards e de planilhas, guardados em data/database.json.
+ *   - CRUD de dashboards, planilhas, usuários e grupos, guardados no MySQL (lib/db.js).
  *   - Estáticos com proteção contra path traversal.
  *
- * Sem dependências externas: só a biblioteca padrão do Node.
+ * Única dependência externa: o driver mysql2.
  */
 
 const http = require('http');
 const fs = require('fs');
-const fsp = require('fs/promises');
 const path = require('path');
 
 require('./lib/env')();   // .env local, antes de qualquer módulo que leia process.env
 
 const db = require('./lib/db');
-const r2 = require('./lib/r2');
 const { podeVerPagina, podeVerDashboard } = require('./lib/permissoes');
 
 const PORT = Number(process.env.PORT) || 8000;
@@ -149,7 +147,7 @@ async function rotaSessao(req, res, segmentos, usuario) {
 
     if (req.method === 'POST' && acao === 'login') {
         const { login, senha } = await lerJSON(req);
-        const resultado = db.autenticar(login, senha);
+        const resultado = await db.autenticar(login, senha);
         if (!resultado) {
             // Mensagem genérica de propósito: não revela se o login existe.
             enviarJSON(res, 401, { error: 'Login ou senha incorretos.' });
@@ -161,7 +159,7 @@ async function rotaSessao(req, res, segmentos, usuario) {
     }
 
     if (req.method === 'POST' && acao === 'logout') {
-        db.encerrarSessao(lerCookies(req)[NOME_COOKIE]);
+        await db.encerrarSessao(lerCookies(req)[NOME_COOKIE]);
         enviarJSON(res, 200, { status: 'ok' }, { 'Set-Cookie': cookieSessao('', 0) });
         return;
     }
@@ -183,15 +181,15 @@ async function rotaUsuarios(req, res, segmentos, usuario) {
     exigirAdmin(usuario);
     const id = segmentos[2] || null;
 
-    if (req.method === 'GET' && !id) { enviarJSON(res, 200, db.listarUsuarios()); return; }
+    if (req.method === 'GET' && !id) { enviarJSON(res, 200, await db.listarUsuarios()); return; }
 
     if (req.method === 'POST' && !id) {
-        enviarJSON(res, 201, db.criarUsuario(await lerJSON(req)));
+        enviarJSON(res, 201, await db.criarUsuario(await lerJSON(req)));
         return;
     }
 
     if ((req.method === 'PUT' || req.method === 'PATCH') && id) {
-        enviarJSON(res, 200, db.atualizarUsuario(id, await lerJSON(req)));
+        enviarJSON(res, 200, await db.atualizarUsuario(id, await lerJSON(req)));
         return;
     }
 
@@ -199,7 +197,7 @@ async function rotaUsuarios(req, res, segmentos, usuario) {
         if (id === usuario.id) {
             throw Object.assign(new Error('Você não pode remover a própria conta.'), { status: 400 });
         }
-        db.removerUsuario(id);
+        await db.removerUsuario(id);
         enviarJSON(res, 200, { status: 'removido' });
         return;
     }
@@ -217,31 +215,31 @@ async function rotaDashboards(req, res, segmentos, usuario) {
     const acao = segmentos[3] || null;   // /api/dashboards/:id/versoes | /restaurar | /duplicar
 
     if (id && acao === 'versoes' && req.method === 'GET') {
-        enviarJSON(res, 200, db.listarVersoes(id));
+        enviarJSON(res, 200, await db.listarVersoes(id));
         return;
     }
 
     if (id && acao === 'restaurar' && req.method === 'POST') {
         exigirAdmin(usuario);
         const { indice } = await lerJSON(req);
-        enviarJSON(res, 200, db.restaurarVersao(id, Number(indice), usuario));
+        enviarJSON(res, 200, await db.restaurarVersao(id, Number(indice), usuario));
         return;
     }
 
     if (id && acao === 'duplicar' && req.method === 'POST') {
         exigirAdmin(usuario);
-        enviarJSON(res, 201, db.duplicarDashboard(id, usuario));
+        enviarJSON(res, 201, await db.duplicarDashboard(id, usuario));
         return;
     }
 
     if (req.method === 'GET' && !id) {
-        const todos = db.listarDashboards();
+        const todos = await db.listarDashboards();
         enviarJSON(res, 200, usuario.papel === 'admin' ? todos : todos.filter(d => podeVerDashboard(usuario, d.id)));
         return;
     }
 
     if (req.method === 'GET' && id) {
-        const d = db.acharDashboard(id);
+        const d = await db.acharDashboard(id);
         if (!d) { enviarJSON(res, 404, { error: 'Dashboard não encontrado.' }); return; }
         if (!podeVerDashboard(usuario, id)) {
             enviarJSON(res, 403, { error: 'Seu grupo não tem acesso a este painel.' });
@@ -255,13 +253,14 @@ async function rotaDashboards(req, res, segmentos, usuario) {
     // é código que roda no navegador de todo mundo que o abrir.
     if (req.method === 'POST' || req.method === 'PUT') {
         exigirAdmin(usuario);
-        enviarJSON(res, 200, db.salvarDashboard(await lerJSON(req), usuario));
+        enviarJSON(res, 200, await db.salvarDashboard(await lerJSON(req), usuario));
         return;
     }
 
     if (req.method === 'DELETE' && id) {
         exigirAdmin(usuario);
-        db.removerDashboard(id);
+        await db.removerDashboard(id);
+        await db.removerDashboardDosGrupos(id);
         enviarJSON(res, 200, { status: 'removido', id });
         return;
     }
@@ -273,64 +272,54 @@ async function rotaDashboards(req, res, segmentos, usuario) {
 // API: planilhas
 // ---------------------------------------------------------------------------
 
-/** Valida e limpa um nome de planilha; null se inválido. Planilhas moram no R2, não no disco. */
+/** Valida e limpa um nome de planilha; null se inválido. */
 function nomePlanilha(nome) {
-    const limpo = path.basename(String(nome || ''));
-    if (!limpo || limpo.startsWith('.')) return null;
+    const limpo = path.basename(String(nome || '')).trim();
+    if (!limpo || limpo.startsWith('.') || limpo.length > 191) return null;
     if (!EXTENSOES_PLANILHA.includes(path.extname(limpo).toLowerCase())) return null;
     return limpo;
 }
 
-async function listarPlanilhas() {
-    const objetos = await r2.listar();
-    const arquivos = objetos
-        .filter(o => EXTENSOES_PLANILHA.includes(path.extname(o.nome).toLowerCase()))
-        .map(o => {
-            // O apelido (P21, 01...) é o que o editor mostra e o runtime resolve.
-            const apelido = (o.nome.match(/^(p?\d+)/i) || [])[1];
-            return {
-                nome: o.nome,
-                apelido: apelido ? apelido.toUpperCase() : null,
-                tamanho: o.tamanho,
-                atualizadoEm: o.atualizadoEm
-            };
-        });
-    arquivos.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true }));
-    return arquivos;
-}
-
 async function rotaPlanilhas(req, res, segmentos, usuario) {
     exigirLogin(usuario);
-    if (!r2.configurado()) {
-        enviarJSON(res, 503, { error: 'Armazenamento de planilhas (R2) não configurado no servidor.' });
-        return;
-    }
     const nome = segmentos[2] ? decodeURIComponent(segmentos[2]) : null;
 
-    if (req.method === 'GET' && !nome) { enviarJSON(res, 200, await listarPlanilhas()); return; }
+    if (req.method === 'GET' && !nome) { enviarJSON(res, 200, await db.listarPlanilhas()); return; }
 
     if (req.method === 'GET' && nome) {
         const limpo = nomePlanilha(nome);
         if (!limpo) { enviarJSON(res, 400, { error: 'Nome de planilha inválido.' }); return; }
-        const dados = await r2.buscar(limpo);
-        if (!dados) { enviarJSON(res, 404, { error: 'Planilha "' + nome + '" não encontrada.' }); return; }
+
+        // O conteúdo só muda num novo envio: com o hash como ETag, o navegador
+        // revalida sem baixar de novo uma planilha de 10 MB que não mudou.
+        const meta = await db.acharPlanilha(limpo);
+        if (!meta) { enviarJSON(res, 404, { error: 'Planilha "' + nome + '" não encontrada.' }); return; }
+        const etag = '"' + meta.sha256 + '"';
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
+            res.end();
+            return;
+        }
+        const arquivo = await db.lerPlanilha(limpo);
+        if (!arquivo) { enviarJSON(res, 404, { error: 'Planilha "' + nome + '" não encontrada.' }); return; }
         res.writeHead(200, {
             'Content-Type': 'application/octet-stream',
-            'Content-Length': dados.length,
-            'Cache-Control': 'no-cache'
+            'Content-Length': arquivo.dados.length,
+            'Cache-Control': 'no-cache',
+            ETag: etag
         });
-        res.end(dados);
+        res.end(arquivo.dados);
         return;
     }
 
     if (req.method === 'POST' && nome) {
         exigirAdmin(usuario);
         const limpo = nomePlanilha(nome);
-        if (!limpo) { enviarJSON(res, 400, { error: 'Nome inválido. Use .xlsx, .xls ou .csv.' }); return; }
+        if (!limpo) { enviarJSON(res, 400, { error: 'Nome inválido. Use .xlsx, .xls ou .csv (até 191 caracteres).' }); return; }
         const dados = await lerCorpo(req, MAX_UPLOAD_BYTES);
         if (!dados.length) { enviarJSON(res, 400, { error: 'Arquivo vazio.' }); return; }
-        await r2.enviar(limpo, dados);
-        enviarJSON(res, 200, { status: 'ok', nome: limpo, tamanho: dados.length });
+        const salva = await db.salvarPlanilha(limpo, dados, usuario);
+        enviarJSON(res, 200, { status: 'ok', nome: salva.nome, tamanho: salva.tamanho });
         return;
     }
 
@@ -338,7 +327,7 @@ async function rotaPlanilhas(req, res, segmentos, usuario) {
         exigirAdmin(usuario);
         const limpo = nomePlanilha(nome);
         if (!limpo) { enviarJSON(res, 400, { error: 'Nome de planilha inválido.' }); return; }
-        await r2.apagar(limpo);
+        if (!await db.removerPlanilha(limpo)) { enviarJSON(res, 404, { error: 'Planilha não encontrada.' }); return; }
         enviarJSON(res, 200, { status: 'removida', nome: limpo });
         return;
     }
@@ -355,24 +344,22 @@ async function rotaGrupos(req, res, segmentos, usuario) {
     const id = segmentos[2] || null;
 
     if (req.method === 'GET' && !id) {
-        const comContagem = db.listarGrupos().map(g =>
-            Object.assign({}, g, { usuarios: db.contarUsuariosNoGrupo(g.id) }));
-        enviarJSON(res, 200, comContagem);
+        enviarJSON(res, 200, await db.listarGrupos());   // já vem com a contagem de usuários
         return;
     }
 
     if (req.method === 'POST' && !id) {
-        enviarJSON(res, 201, db.criarGrupo(await lerJSON(req)));
+        enviarJSON(res, 201, await db.criarGrupo(await lerJSON(req)));
         return;
     }
 
     if ((req.method === 'PUT' || req.method === 'PATCH') && id) {
-        enviarJSON(res, 200, db.atualizarGrupo(id, await lerJSON(req)));
+        enviarJSON(res, 200, await db.atualizarGrupo(id, await lerJSON(req)));
         return;
     }
 
     if (req.method === 'DELETE' && id) {
-        db.removerGrupo(id);
+        await db.removerGrupo(id);
         enviarJSON(res, 200, { status: 'removido', id });
         return;
     }
@@ -481,7 +468,7 @@ const server = http.createServer(async (req, res) => {
     const url = analisarUrl(req);
     let usuario = null;
     try {
-        usuario = usuarioDaRequisicao(req);
+        usuario = await usuarioDaRequisicao(req);
     } catch (err) {
         console.error('[sessão]', err.message);
     }
@@ -506,38 +493,46 @@ const server = http.createServer(async (req, res) => {
 process.on('uncaughtException', err => console.error('[exceção não tratada]', err));
 process.on('unhandledRejection', err => console.error('[promise rejeitada]', err));
 
-fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
-
-const senhaInicial = db.garantirAdmin();
-db.limparSessoesVencidas();
-setInterval(() => db.limparSessoesVencidas(), 60 * 60 * 1000).unref();
-
-server.listen(PORT, async () => {
-    let planilhas = '?';
-    if (r2.configurado()) {
-        try { planilhas = String((await r2.listar()).length); }
-        catch (err) { console.error('[r2] não foi possível listar o bucket: ' + err.message); planilhas = 'erro'; }
+async function subir() {
+    if (!db.configurado()) {
+        console.error('  [db] Banco não configurado. Defina DB_HOST, DB_PORT, DB_USER, DB_PASSWORD e DB_NAME');
+        console.error('       no .env (local) ou nas variáveis de ambiente da hospedagem.');
+        process.exit(1);
+    }
+    try {
+        await db.iniciar();
+    } catch (err) {
+        console.error('  [db] Não foi possível conectar ao MySQL em ' + (process.env.DB_HOST || 'localhost') +
+                      ':' + (process.env.DB_PORT || 3306) + ' — ' + (err.code || '') + ' ' + err.message);
+        process.exit(1);
     }
 
-    console.log('');
-    console.log('  EPCVIEW  ·  ' + (SITE_PUBLICO ? 'site: http://localhost:' + PORT + '  ·  ' : 'site público desligado  ·  ') +
-                'painel: http://localhost:' + PORT + '/login.html');
-    console.log('  ' + '-'.repeat(70));
-    console.log('  ' + db.listarDashboards().length + ' dashboards  ·  ' + planilhas + ' planilhas  ·  ' +
-                db.listarUsuarios().length + ' usuários');
-    if (!r2.configurado()) {
-        console.log('  [r2] variáveis de ambiente ausentes — upload/leitura de planilhas vai falhar.' +
-                     ' Configure R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.');
-    }
+    const senhaInicial = await db.garantirAdmin();
+    await db.limparSessoesVencidas();
+    setInterval(() => db.limparSessoesVencidas().catch(err => console.error('[db]', err.message)),
+        60 * 60 * 1000).unref();
+    const totais = await db.resumo();
 
-    if (senhaInicial) {
+    server.listen(PORT, () => {
         console.log('');
-        console.log('  ┌' + '─'.repeat(44) + '┐');
-        console.log('  │  PRIMEIRO ACESSO                           │');
-        console.log('  │  login: admin                              │');
-        console.log('  │  senha: ' + senhaInicial.padEnd(35) + '│');
-        console.log('  │  Anote: esta senha não será exibida de novo│');
-        console.log('  └' + '─'.repeat(44) + '┘');
-    }
-    console.log('');
-});
+        console.log('  EPCVIEW  ·  ' + (SITE_PUBLICO ? 'site: http://localhost:' + PORT + '  ·  ' : 'site público desligado  ·  ') +
+                    'painel: http://localhost:' + PORT + '/login.html');
+        console.log('  ' + '-'.repeat(70));
+        console.log('  banco: ' + process.env.DB_NAME + ' @ ' + (process.env.DB_HOST || 'localhost'));
+        console.log('  ' + totais.dashboards + ' dashboards  ·  ' + totais.planilhas + ' planilhas  ·  ' +
+                    totais.usuarios + ' usuários  ·  ' + totais.grupos + ' grupos');
+
+        if (senhaInicial) {
+            console.log('');
+            console.log('  ┌' + '─'.repeat(44) + '┐');
+            console.log('  │  PRIMEIRO ACESSO                           │');
+            console.log('  │  login: admin                              │');
+            console.log('  │  senha: ' + senhaInicial.padEnd(35) + '│');
+            console.log('  │  Anote: esta senha não será exibida de novo│');
+            console.log('  └' + '─'.repeat(44) + '┘');
+        }
+        console.log('');
+    });
+}
+
+subir();

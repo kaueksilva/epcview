@@ -9,10 +9,8 @@ npm-debug.log*
 yarn-error.log*
 
 # Dados da obra -------------------------------------------------------------
-# As planilhas moram no Cloudflare R2 (lib/r2.js), não no disco: local e
-# hospedado enxergam o mesmo balde, então nada se perde entre deploys/reinícios
-# nem entre "no meu PC" e "no Render". Não há mais pasta local para planilhas.
-# As credenciais do R2 ficam no .env (ver seção "Ambiente e segredos" abaixo).
+# Usuários, painéis e planilhas moram no MySQL (lib/db.js), não no disco nem
+# no git. As credenciais do banco ficam no .env (ver "Ambiente e segredos").
 
 # Backups e material de apoio -----------------------------------------------
 # Arquivos preservados de versões anteriores e planilhas de exemplo.
@@ -77,11 +75,3 @@ temp/
 perfil-edge*/
 *.png.tmp
 coverage/
-
-# ---------------------------------------------------------------------------
-# Propositalmente VERSIONADO:
-#   data/database.json  -> usuários e dashboards. Os painéis são o conteúdo do
-#                          sistema (código JS escrito pelos admins), e ter
-#                          histórico deles permite saber quem mudou o quê e
-#                          reverter. As sessões NÃO ficam aqui.
-# ---------------------------------------------------------------------------
