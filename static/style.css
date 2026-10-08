@@ -225,7 +225,10 @@ body {
                 color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn[hidden] { display: none; }   /* o display: inline-flex acima venceria o [hidden] do navegador */
+/* Qualquer classe com display (flex, grid...) vence o [hidden] do navegador e
+   mostra o que devia estar escondido — foi assim que o botão "Editar" do painel
+   apareceu para quem não é admin. Esta regra vale para a página inteira. */
+[hidden] { display: none !important; }
 a.btn { text-decoration: none; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
