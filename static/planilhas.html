@@ -243,13 +243,45 @@
   table.dados th.pl-num { z-index: 3; background: var(--surface-soft); }
   table.dados tbody tr:hover td.pl-num { background: var(--primary-soft); }
 
+  /* Cabeçalho clicável: ordena; o selo diz o tipo detectado da coluna */
+  table.dados th.pl-col { padding: 0; }
+  .pl-th {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+    padding: 9px 12px; border: none; background: none; cursor: pointer;
+    font: inherit; color: inherit; text-align: left;
+  }
+  .pl-th:hover { background: var(--primary-soft); color: var(--text); }
+  .pl-th:focus-visible { outline: 2px solid var(--primary-light); outline-offset: -2px; }
+  th.num .pl-th { justify-content: flex-end; }
+  .pl-th-tipo {
+    display: inline-grid; place-items: center; flex-shrink: 0;
+    min-width: 18px; height: 18px; padding: 0 3px; border-radius: 4px;
+    background: var(--border); color: var(--text-muted); font-size: 9.5px; font-weight: 700;
+  }
+  .pl-th-seta { width: 10px; flex-shrink: 0; opacity: .35; }
+  th[aria-sort] .pl-th-seta { opacity: 1; color: var(--primary); }
+  table.dados td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.dados td.data { font-variant-numeric: tabular-nums; }
+  table.dados mark { background: #ffe58a; color: inherit; border-radius: 2px; padding: 0 1px; }
+
   .pl-tabela-rodape {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;
     padding: var(--space-2) var(--space-4);
     border-top: 1px solid var(--border);
     background: var(--surface-soft);
     font-size: var(--text-xs); color: var(--text-light);
     flex-shrink: 0;
   }
+  .pl-paginacao { display: flex; align-items: center; gap: 4px; }
+  .pl-paginacao[hidden] { display: none; }
+  .pl-paginacao button {
+    display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-xs);
+    background: var(--surface); color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .pl-paginacao button:hover:not(:disabled) { border-color: var(--primary-light); color: var(--primary); }
+  .pl-paginacao button:disabled { opacity: .4; cursor: default; }
+  .pl-paginacao span { padding: 0 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   /* Estado inicial, sem planilha aberta */
   .pl-inicio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-10) var(--space-6); text-align: center; }
@@ -682,7 +714,16 @@
           <div class="pl-tabela" id="detalhe-tabela" hidden>
             <table class="dados"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
           </div>
-          <div class="pl-tabela-rodape" id="detalhe-rodape" hidden></div>
+          <div class="pl-tabela-rodape" id="detalhe-rodape" hidden>
+            <span id="rodape-info"></span>
+            <div class="pl-paginacao" id="paginacao">
+              <button type="button" id="pag-primeira" title="Primeira página" aria-label="Primeira página">«</button>
+              <button type="button" id="pag-anterior" title="Página anterior" aria-label="Página anterior">‹</button>
+              <span id="pag-info"></span>
+              <button type="button" id="pag-proxima" title="Próxima página" aria-label="Próxima página">›</button>
+              <button type="button" id="pag-ultima" title="Última página" aria-label="Última página">»</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -875,18 +916,115 @@
   // Linhas da planilha aberta, guardadas para a busca não reler o arquivo.
   let linhasAbertas = [];
   let colunasAbertas = [];
-  const LIMITE_LINHAS = 200;
+  let tiposColunas = {};       // coluna → 'num' | 'data' | 'bool' | 'texto'
+  let textoBusca = null;       // por linha, o texto exibido (montado na 1ª busca), para achar "13/10/2026"
+  let ordem = null;            // { coluna, dir: 1 | -1 } — clique no cabeçalho
+  let pagina = 0;
+  const POR_PAGINA = 100;
 
-  /** Índices das linhas que passam na busca da tabela (todas, se a busca estiver vazia). */
+  const ROTULO_TIPO = { num: '#', data: 'D', bool: '✓', texto: 'Aa' };
+  const NOME_TIPO = { num: 'número', data: 'data', bool: 'sim/não', texto: 'texto' };
+  const vazio = v => v === null || v === undefined || v === '';
+
+  /** Tipo da coluna pela maioria dos valores preenchidos (amostra das primeiras 500 linhas). */
+  function detectarTipo(coluna) {
+    const cont = { num: 0, data: 0, bool: 0, texto: 0 };
+    let vistos = 0;
+    for (let i = 0; i < linhasAbertas.length && vistos < 500; i++) {
+      const v = linhasAbertas[i][coluna];
+      if (vazio(v)) continue;
+      vistos++;
+      if (typeof v === 'number') cont.num++;
+      else if (v instanceof Date && !isNaN(v)) cont.data++;
+      else if (typeof v === 'boolean') cont.bool++;
+      else cont.texto++;
+    }
+    if (!vistos) return 'texto';
+    const [tipo, n] = Object.entries(cont).sort((a, b) => b[1] - a[1])[0];
+    return n / vistos >= 0.8 ? tipo : 'texto';
+  }
+
+  function comparar(a, b) {
+    if (typeof a === 'number' && typeof b === 'number') return a - b;
+    if (a instanceof Date && b instanceof Date) return a - b;
+    return String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' });
+  }
+
+  /**
+   * Índices das linhas que passam na busca, já na ordem escolhida (todas, se a
+   * busca estiver vazia). A exportação e a ficha usam a mesma lista, então
+   * seguem o que está na tela.
+   */
   function indicesFiltrados() {
     const termo = $('filtro-linhas').value.trim().toLowerCase();
-    const indices = [];
-    for (let i = 0; i < linhasAbertas.length; i++) {
-      if (!termo) { indices.push(i); continue; }
-      const linha = linhasAbertas[i];
-      if (colunasAbertas.some(c => linha[c] != null && String(linha[c]).toLowerCase().includes(termo))) indices.push(i);
+    let indices = linhasAbertas.map((_, i) => i);
+    if (termo) {
+      if (!textoBusca) {
+        textoBusca = linhasAbertas.map(l =>
+          colunasAbertas.map(c => textoDoValor(l[c]) || '').join('\u0001').toLowerCase());
+      }
+      indices = indices.filter(i => textoBusca[i].includes(termo));
+    }
+    if (ordem) {
+      const { coluna, dir } = ordem;
+      indices.sort((ia, ib) => {
+        const a = linhasAbertas[ia][coluna], b = linhasAbertas[ib][coluna];
+        if (vazio(a) || vazio(b)) return vazio(a) - vazio(b);   // vazios sempre no fim
+        return comparar(a, b) * dir;
+      });
     }
     return indices;
+  }
+
+  /** Clique no cabeçalho: crescente → decrescente → ordem original da planilha. */
+  function ordenarPor(coluna) {
+    const atual = ordem && ordem.coluna === coluna ? ordem.dir : 0;
+    ordem = atual === 0 ? { coluna, dir: 1 } : atual === 1 ? { coluna, dir: -1 } : null;
+    pagina = 0;
+    desenharCabecalho();
+    desenharTabela();
+  }
+
+  function desenharCabecalho() {
+    const tr = document.createElement('tr');
+    const thNum = document.createElement('th');
+    thNum.className = 'pl-num';
+    thNum.textContent = '#';
+    tr.appendChild(thNum);
+
+    colunasAbertas.forEach(c => {
+      const tipo = tiposColunas[c];
+      const th = document.createElement('th');
+      th.scope = 'col';
+      th.className = 'pl-col' + (tipo === 'num' ? ' num' : '');
+      if (ordem && ordem.coluna === c) th.setAttribute('aria-sort', ordem.dir > 0 ? 'ascending' : 'descending');
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'pl-th';
+      botao.title = c + ' (' + NOME_TIPO[tipo] + ') · clique para ordenar';
+      const selo = document.createElement('span');
+      selo.className = 'pl-th-tipo';
+      selo.textContent = ROTULO_TIPO[tipo];
+      const nome = document.createElement('span');
+      nome.textContent = c;
+      const seta = document.createElement('span');
+      seta.className = 'pl-th-seta';
+      seta.textContent = !th.hasAttribute('aria-sort') ? '↕' : ordem.dir > 0 ? '↑' : '↓';
+      botao.append(selo, nome, seta);
+      botao.addEventListener('click', () => ordenarPor(c));
+      th.appendChild(botao);
+      tr.appendChild(th);
+    });
+    $('thead').replaceChildren(tr);
+  }
+
+  /** Escreve o texto na célula marcando o termo buscado, sem usar innerHTML. */
+  function preencherCelula(td, texto, termo) {
+    const pos = termo ? texto.toLowerCase().indexOf(termo) : -1;
+    if (pos < 0) { td.textContent = texto; return; }
+    const mark = document.createElement('mark');
+    mark.textContent = texto.slice(pos, pos + termo.length);
+    td.append(texto.slice(0, pos), mark, texto.slice(pos + termo.length));
   }
 
   /** Nome de arquivo para a exportação: o da planilha, sem extensão, mais "-filtrado" se houver busca. */
@@ -896,7 +1034,7 @@
   }
 
   /**
-   * Exporta o que está na tabela — todas as linhas (não só as 200 da tela),
+   * Exporta o que está na tabela — todas as linhas (não só a página da tela),
    * com a busca aplicada e as colunas já normalizadas, que é como os painéis leem.
    * Para o arquivo original, do jeito que foi enviado, existe o botão "Baixar".
    */
@@ -945,21 +1083,24 @@
     const termo = $('filtro-linhas').value.trim().toLowerCase();
     const indices = indicesFiltrados();
 
-    const exibidas = indices.slice(0, LIMITE_LINHAS);
+    const paginas = Math.max(1, Math.ceil(indices.length / POR_PAGINA));
+    pagina = Math.min(pagina, paginas - 1);
+    const inicio = pagina * POR_PAGINA;
+    const exibidas = indices.slice(inicio, inicio + POR_PAGINA);
     const total = linhasAbertas.length.toLocaleString('pt-BR');
     const dica = telaCompacta.matches || toque.matches ? ' · toque numa linha para ver todos os campos' : '';
     $('filtro-contagem').textContent = termo
       ? indices.length.toLocaleString('pt-BR') + ' de ' + total + ' linhas'
       : '';
     $('detalhe-rodape').hidden = false;
-    $('detalhe-rodape').textContent = !indices.length
+    $('rodape-info').textContent = !indices.length
       ? 'Nenhuma linha encontrada.'
-      : exibidas.length < indices.length
-        ? 'Mostrando as primeiras ' + exibidas.length + ' de ' + indices.length.toLocaleString('pt-BR') +
-          (termo ? ' linhas encontradas' : ' linhas') + ' · o painel lê todas'
-        : 'Mostrando ' + (exibidas.length === 1 ? 'a única linha' : 'todas as ' + exibidas.length.toLocaleString('pt-BR') + ' linhas') +
-          (termo ? ' encontradas' : '');
-    if (indices.length) $('detalhe-rodape').textContent += dica;
+      : 'Linhas ' + (inicio + 1).toLocaleString('pt-BR') + '–' + (inicio + exibidas.length).toLocaleString('pt-BR') +
+        ' de ' + indices.length.toLocaleString('pt-BR') + (termo ? ' encontradas' : '') + dica;
+    $('paginacao').hidden = paginas <= 1;
+    $('pag-info').textContent = 'Página ' + (pagina + 1) + ' de ' + paginas;
+    $('pag-primeira').disabled = $('pag-anterior').disabled = pagina === 0;
+    $('pag-proxima').disabled = $('pag-ultima').disabled = pagina >= paginas - 1;
 
     const frag = document.createDocumentFragment();
     exibidas.forEach(i => {
@@ -973,17 +1114,24 @@
       colunasAbertas.forEach(c => {
         const td = document.createElement('td');
         const v = linha[c];
-        const texto = (v === null || v === undefined) ? ''
-          : v instanceof Date ? formatarData(v)   // senão sai "Fri May 01 2026 00:00:00 GMT..."
-          : String(v);
-        td.textContent = texto;
-        if (texto.length > 30) td.title = texto;
+        const texto = textoDoValor(v);   // datas e números em pt-BR (senão sai "Fri May 01 2026 00:00:00 GMT...")
+        if (texto === null) {
+          td.className = 'vazio-celula';
+          td.textContent = '—';
+        } else {
+          if (typeof v === 'number') td.className = 'num';
+          else if (v instanceof Date) td.className = 'data';
+          preencherCelula(td, texto, termo);
+          // Valor completo ao passar o mouse: textos longos ficam cortados e números perdem casas.
+          const bruto = typeof v === 'number' ? String(v).replace('.', ',') : texto;
+          if (bruto.length > 30 || bruto !== texto) td.title = bruto;
+        }
         tr.appendChild(td);
       });
       frag.appendChild(tr);
     });
-    $('tbody').innerHTML = '';
-    $('tbody').appendChild(frag);
+    $('tbody').replaceChildren(frag);
+    $('detalhe-tabela').scrollTop = 0;
   }
 
   // ---------------------------------------------------------------------
@@ -1016,17 +1164,20 @@
   let fichaIndices = [];
   let fichaPosicao = -1;
 
-  /** Data da planilha em pt-BR; só mostra a hora quando ela existe (meia-noite = só a data). */
+  /**
+   * Data da planilha em pt-BR, só a data. Arredonda ao minuto antes: a conversão
+   * do Excel às vezes entrega 23:59:4x do dia anterior, o que mostraria um dia a menos.
+   */
   function formatarData(d) {
     if (isNaN(d)) return '';
-    const temHora = d.getHours() || d.getMinutes() || d.getSeconds();
-    return temHora ? d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : d.toLocaleDateString('pt-BR');
+    return new Date(Math.round(d.getTime() / 60000) * 60000).toLocaleDateString('pt-BR');
   }
 
-  function textoDoValor(v) {
+  function textoDoValor(v, casas) {
     if (v === null || v === undefined || v === '') return null;
     if (v instanceof Date) return isNaN(v) ? null : formatarData(v);
-    if (typeof v === 'number') return v.toLocaleString('pt-BR', { maximumFractionDigits: 6 });
+    if (typeof v === 'number') return v.toLocaleString('pt-BR', { maximumFractionDigits: casas || 2 });
+    if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
     return String(v);
   }
 
@@ -1042,7 +1193,7 @@
       const dt = document.createElement('dt');
       dt.textContent = c;
       const dd = document.createElement('dd');
-      const texto = textoDoValor(linha[c]);
+      const texto = textoDoValor(linha[c], 6);   // a ficha mostra o valor com mais precisão
       dd.textContent = texto === null ? 'vazio' : texto;
       if (texto === null) dd.className = 'ficha-vazio';
       bloco.append(dt, dd);
@@ -1224,26 +1375,23 @@
     $('tbody').innerHTML = '';
     linhasAbertas = [];
     colunasAbertas = [];
+    textoBusca = null;
+    ordem = null;
+    pagina = 0;
 
     try {
       const linhas = await UHN.consultar(planilha.apelido || planilha.nome);
       if (aberta !== planilha) return;   // trocou de planilha enquanto lia
       linhasAbertas = linhas;
       colunasAbertas = Object.keys(linhas[0] || {});
+      tiposColunas = Object.fromEntries(colunasAbertas.map(c => [c, detectarTipo(c)]));
 
       $('detalhe-metricas').innerHTML =
         metrica(linhas.length.toLocaleString('pt-BR'), 'Linhas') +
         metrica(colunasAbertas.length.toLocaleString('pt-BR'), 'Colunas') +
         metrica(UHNUI.tamanhoLegivel(planilha.tamanho), 'Tamanho');
 
-      const tr = document.createElement('tr');
-      const thNum = document.createElement('th');
-      thNum.className = 'pl-num';
-      thNum.textContent = '#';
-      tr.appendChild(thNum);
-      colunasAbertas.forEach(c => { const th = document.createElement('th'); th.textContent = c; tr.appendChild(th); });
-      $('thead').appendChild(tr);
-
+      desenharCabecalho();
       $('tabela-barra').hidden = false;
       desenharTabela();
     } catch (err) {
@@ -1539,8 +1687,12 @@
     let esperaFiltro = null;
     $('filtro-linhas').addEventListener('input', () => {
       clearTimeout(esperaFiltro);
-      esperaFiltro = setTimeout(desenharTabela, 150);   // planilhas grandes: não refiltra a cada tecla
+      esperaFiltro = setTimeout(() => { pagina = 0; desenharTabela(); }, 150);   // planilhas grandes: não refiltra a cada tecla
     });
+    $('pag-primeira').addEventListener('click', () => { pagina = 0; desenharTabela(); });
+    $('pag-anterior').addEventListener('click', () => { pagina = Math.max(0, pagina - 1); desenharTabela(); });
+    $('pag-proxima').addEventListener('click', () => { pagina++; desenharTabela(); });
+    $('pag-ultima').addEventListener('click', () => { pagina = Infinity; desenharTabela(); });
 
     $('btn-historico').addEventListener('click', abrirHistorico);
     $('hist-fechar').addEventListener('click', fecharHistorico);

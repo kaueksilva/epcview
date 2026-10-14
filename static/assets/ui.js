@@ -14,14 +14,16 @@
     // `secao` agrupa o menu como no mockup da plataforma: o dia a dia em cima,
     // a gestão do sistema embaixo.
     const ITENS = [
-        { chave: 'editor', secao: 'admin', href: 'index.html', rotulo: 'Editor', somenteAdmin: true, icone:
-            '<path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/>' },
-        { chave: 'galeria', secao: 'plataforma', href: 'lista_dashboards.html', rotulo: 'Dashboards', icone:
+        { chave: 'inicio', secao: 'consulta', href: 'inicio.html', rotulo: 'Início', icone:
+            '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>' },
+        { chave: 'galeria', secao: 'consulta', href: 'lista_dashboards.html', rotulo: 'Dashboards', icone:
             '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>' +
             '<rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>' },
-        { chave: 'planilhas', secao: 'plataforma', href: 'planilhas.html', rotulo: 'Planilhas', icone:
+        { chave: 'planilhas', secao: 'consulta', href: 'planilhas.html', rotulo: 'Planilhas', icone:
             '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M3 15h18"/>' },
-        { chave: 'usuarios', secao: 'admin', href: 'usuarios.html', rotulo: 'Usuários', somenteAdmin: true, icone:
+        { chave: 'editor', secao: 'admin', href: 'index.html', rotulo: 'Editor de painéis', somenteAdmin: true, icone:
+            '<path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/>' },
+        { chave: 'usuarios', secao: 'admin', href: 'usuarios.html', rotulo: 'Usuários e grupos', somenteAdmin: true, icone:
             '<path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/>' +
             '<path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16.5 3.6a4 4 0 0 1 0 7.3"/>' },
         { chave: 'conta', secao: 'conta', href: 'conta.html', rotulo: 'Minha conta', icone:
@@ -33,7 +35,8 @@
         'stroke-linecap="round" stroke-linejoin="round" style="width:' + (tamanho || 17) + 'px;height:' +
         (tamanho || 17) + 'px;flex-shrink:0">' + caminho + '</svg>';
 
-    const SECOES = { plataforma: 'Plataforma', admin: 'Administração', conta: 'Conta' };
+    // O que se consulta no dia a dia, depois o que é de gestão, e por fim a própria conta.
+    const SECOES = { consulta: 'Consulta', admin: 'Administração', conta: 'Conta' };
 
     /** O "V" da marca: um vetor, com o degradê azul institucional → ciano. */
     const V_MARCA =
@@ -57,7 +60,8 @@
     function escapar(texto) {
         const d = document.createElement('div');
         d.textContent = texto == null ? '' : String(texto);
-        return d.innerHTML;
+        // Aspas também: o resultado pode ir para dentro de atributos (title="...", src="...").
+        return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /** Lista resumida de painéis publicados, para o grupo expansível "Dashboards" da barra lateral. */
@@ -106,13 +110,16 @@
 
     const CHAVE_LATERAL = 'epc:lateral-recolhida';
 
-    /** Aberto por padrão na primeira visita, para quem nunca viu o recurso perceber que ele existe. */
+    /**
+     * Fechado por padrão, para o menu caber sem rolar; a seta e a contagem
+     * mostram que há uma lista ali. Quem abre ou fecha tem a escolha lembrada,
+     * e o grupo do painel aberto abre sozinho (forcarAberto).
+     */
     function preferenciaGrupo(chave) {
         try {
-            const valor = localStorage.getItem('epc:grupo-' + chave + '-aberto');
-            return valor === null ? true : valor === '1';
+            return localStorage.getItem('epc:grupo-' + chave + '-aberto') === '1';
         } catch {
-            return true;
+            return false;
         }
     }
 
@@ -177,7 +184,7 @@
             barra.className = 'barra-movel';
             barra.appendChild(botao);
             const marca = document.createElement('a');
-            marca.href = 'lista_dashboards.html';
+            marca.href = 'inicio.html';
             marca.style.textDecoration = 'none';
             marca.innerHTML = logo({ semSub: true });
             barra.appendChild(marca);
@@ -221,7 +228,9 @@
     }
 
     /** Grupo expansível: cabeçalho (link + contagem) + seta + lista de sub-itens num trilho abaixo. */
-    function renderizarGrupoExpansivel(item, ativa, subItensHtml, chave, mensagemVazia, forcarAberto) {
+    function renderizarGrupoExpansivel(item, ativa, subItensHtml, chave, mensagemVazia, forcarAberto, contagem) {
+        // A sublista pode ter títulos (categorias) entre os itens: a contagem vem à parte.
+        const total = contagem === undefined ? subItensHtml.length : contagem;
         // Com um item ativo lá dentro, abre mesmo que a preferência salva seja "fechado" —
         // esconder o próprio destaque que o usuário veio ver seria pior que ignorar a preferência.
         const aberto = forcarAberto || preferenciaGrupo(chave);
@@ -232,7 +241,7 @@
         const rotuloTag =
             '<a href="' + item.href + '" data-rotulo="' + item.rotulo + '" class="bl-item bl-grupo-rotulo' + classeAtiva + '">' +
               icone(item.icone) + '<span>' + item.rotulo + '</span>' +
-              (subItensHtml.length ? '<span class="bl-contagem">' + subItensHtml.length + '</span>' : '') +
+              (total ? '<span class="bl-contagem">' + total + '</span>' : '') +
             '</a>';
 
         return (
@@ -253,11 +262,34 @@
     /** Renderiza um item de navegação; "galeria" vira grupo expansível com os painéis. */
     function renderizarItemNav(item, ativa, contexto) {
         if (item.chave === 'galeria') {
-            const subItens = contexto.paineis.map(p =>
+            const link = p =>
                 '<a class="bl-sub-item' + (p.id === contexto.subAtiva ? ' ativo' : '') + '" href="viewer.html?id=' + encodeURIComponent(p.id) + '">' +
-                escapar(p.titulo || 'Sem título') + '</a>');
+                escapar(p.titulo || 'Sem título') + '</a>';
             const temAtivo = contexto.paineis.some(p => p.id === contexto.subAtiva);
-            return renderizarGrupoExpansivel(item, ativa, subItens, 'galeria', 'Nenhum painel publicado ainda.', temAtivo);
+            const usaCategorias = contexto.paineis.some(p => p.categoria);
+            if (!usaCategorias) {
+                return renderizarGrupoExpansivel(item, ativa, contexto.paineis.map(link), 'galeria', 'Nenhum painel publicado ainda.', temAtivo);
+            }
+            // Com categorias: os painéis agrupados, cada título (com a cor da categoria) levando
+            // à lista já filtrada; "Sem categoria" no fim.
+            const grupos = new Map();
+            contexto.paineis.forEach(p => {
+                const nome = p.categoria ? p.categoria.nome : '';
+                if (!grupos.has(nome)) grupos.set(nome, { cor: p.categoria ? p.categoria.cor : null, paineis: [] });
+                grupos.get(nome).paineis.push(p);
+            });
+            const subItens = [];
+            [...grupos.keys()]
+                .sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'pt-BR', { numeric: true }))
+                .forEach(nome => {
+                    const { cor, paineis } = grupos.get(nome);
+                    const ponto = /^#[0-9a-f]{6}$/i.test(cor || '') ? '<i class="bl-sub-cat-cor" style="background:' + cor + '"></i>' : '';
+                    subItens.push('<a class="bl-sub-cat" href="lista_dashboards.html?categoria=' + encodeURIComponent(nome) + '">' +
+                        ponto + escapar(nome || 'Sem categoria') + '</a>');
+                    paineis.forEach(p => subItens.push(link(p)));
+                });
+            return renderizarGrupoExpansivel(item, ativa, subItens, 'galeria', 'Nenhum painel publicado ainda.', temAtivo,
+                contexto.paineis.length);
         }
 
         return '<a href="' + item.href + '" data-rotulo="' + item.rotulo + '" ' +
@@ -296,7 +328,7 @@
         alvo.className = 'barra-lateral';
         alvo.innerHTML =
             '<div class="bl-topo">' +
-              '<a class="bl-marca" href="lista_dashboards.html" title="EPCVIEW — início">' +
+              '<a class="bl-marca" href="inicio.html" title="EPCVIEW — início">' +
                 logo({ classe: 'bl-marca-logo' }) +
                 '<img class="bl-marca-icone" src="/favicon.svg" alt="EPCVIEW">' +
               '</a>' +

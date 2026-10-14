@@ -73,6 +73,97 @@
   .pc-acoes .btn { height: 2rem; font-size: .75rem; flex: 1; }
   .pc-acoes .btn-perigo, .pc-acoes .btn-icone { flex: 0 0 2rem; padding: 0; }
 
+  /* Categorias: filtro em pílulas + uma seção por categoria */
+  .cat-filtros { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.2rem; }
+  .cat-filtro {
+    display: inline-flex; align-items: center; gap: .4rem;
+    height: 2rem; padding: 0 .8rem;
+    border: 1px solid var(--borda-forte); border-radius: 999px;
+    background: var(--superficie); color: var(--texto-2);
+    font-family: inherit; font-size: .78rem; font-weight: 600; cursor: pointer;
+    transition: background var(--transicao), border-color var(--transicao), color var(--transicao);
+  }
+  .cat-filtro:hover { border-color: var(--azul-500); color: var(--azul-700); }
+  .cat-filtro[aria-pressed="true"] { background: var(--azul-800); border-color: var(--azul-800); color: #fff; }
+  .cat-filtro b { font-weight: 700; font-size: .7rem; padding: 0 .35rem; border-radius: 999px; background: var(--superficie-2); color: var(--texto-2); }
+  .cat-filtro[aria-pressed="true"] b { background: rgba(255, 255, 255, .2); color: #fff; }
+
+  .cat-filtro i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cat-filtro[aria-pressed="true"] i { box-shadow: 0 0 0 2px rgba(255, 255, 255, .7); }
+
+  .cat-secao + .cat-secao { margin-top: 2rem; }
+  .cat-titulo {
+    display: flex; align-items: center; gap: .55rem;
+    margin: 0 0 .85rem; font-size: .95rem; font-weight: 700; color: var(--texto);
+  }
+  .cat-titulo svg { color: var(--cat-cor, var(--texto-3)); }
+  .cat-titulo span { font-size: .72rem; font-weight: 600; color: var(--texto-3); }
+  .cat-secao.sem-categoria .cat-titulo { color: var(--texto-2); }
+
+  /* A cor da categoria marca o cartão: faixa no topo e o ícone */
+  .painel-cartao.com-cor { border-top: 3px solid var(--cat-cor); }
+  .painel-cartao.com-cor .pc-icone { background: color-mix(in srgb, var(--cat-cor) 14%, #fff); color: var(--cat-cor); }
+  .painel-cartao.com-cor:hover .pc-icone { background: var(--cat-cor); color: #fff; }
+  .pc-cat {
+    display: inline-flex; align-items: center; gap: .3rem; margin-bottom: .45rem;
+    font-size: .66rem; font-weight: 700; color: var(--cat-cor);
+  }
+  .pc-cat i { width: 7px; height: 7px; border-radius: 50%; background: var(--cat-cor); }
+
+  /* Gerenciar categorias (admin) */
+  .cg-lista { display: flex; flex-direction: column; max-height: 50vh; overflow-y: auto; border: 1px solid var(--borda); border-radius: 12px; }
+  .cg-linha { display: flex; align-items: center; gap: .7rem; padding: .65rem .8rem; }
+  .cg-linha + .cg-linha { border-top: 1px solid var(--borda); }
+  .cg-ponto { width: 14px; height: 14px; flex-shrink: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+  .cg-nome { flex: 1; min-width: 0; font-size: .86rem; font-weight: 600; color: var(--texto); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-qtd { flex-shrink: 0; font-size: .72rem; color: var(--texto-3); }
+  .cg-acao {
+    display: inline-flex; align-items: center; gap: .3rem; flex-shrink: 0;
+    height: 1.9rem; padding: 0 .65rem;
+    border: 1px solid var(--borda-forte); border-radius: 8px; background: var(--superficie);
+    font-family: inherit; font-size: .74rem; font-weight: 600; color: var(--texto-2); cursor: pointer;
+  }
+  .cg-acao:hover { border-color: var(--azul-500); color: var(--azul-700); }
+  .cg-acao.perigo:hover { border-color: #d92d20; color: #d92d20; background: #fef3f2; }
+  .cg-vazio { margin: 0; padding: 1.2rem 1rem; font-size: .8rem; color: var(--texto-3); text-align: center; }
+
+  /* Formulário de nome + cor */
+  .cg-rotulo { display: block; margin: 1rem 0 .4rem; font-size: .74rem; font-weight: 700; color: var(--texto-2); }
+  #cg-vista-editar .modal-titulo { margin-bottom: .2rem; }
+  .cg-paleta { display: grid; grid-template-columns: repeat(10, 1fr); gap: .45rem; }
+  .cg-amostra {
+    aspect-ratio: 1; width: 100%; padding: 0; cursor: pointer;
+    border: 2px solid transparent; border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1);
+    transition: transform .12s ease;
+  }
+  .cg-amostra:hover { transform: scale(1.1); }
+  .cg-amostra[aria-checked="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--texto); }
+  .cg-livre { display: flex; align-items: center; gap: .6rem; margin-top: .75rem; }
+  .cg-seletor {
+    display: inline-flex; align-items: center; gap: .5rem; flex: 1;
+    height: 2.3rem; padding: 0 .7rem 0 .35rem;
+    border: 1px dashed var(--borda-forte); border-radius: 10px; cursor: pointer;
+    font-size: .78rem; font-weight: 600; color: var(--texto-2);
+  }
+  .cg-seletor:hover { border-color: var(--azul-500); color: var(--azul-700); }
+  .cg-seletor input {
+    width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; background: none; cursor: pointer;
+  }
+  .cg-seletor input::-webkit-color-swatch-wrapper { padding: 0; }
+  .cg-seletor input::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .cg-seletor input::-moz-color-swatch { border: none; border-radius: 50%; }
+  .cg-hex { width: 7.5rem; height: 2.3rem; font-family: var(--font-mono, monospace); font-size: .82rem; text-transform: uppercase; }
+  .cg-hex.invalido { border-color: #d92d20; }
+  .cg-previa { display: flex; align-items: center; gap: .6rem; margin-top: 1rem; font-size: .74rem; color: var(--texto-3); }
+  .cg-previa-etiqueta {
+    display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .75rem;
+    border-radius: 999px; background: color-mix(in srgb, var(--cat-cor) 14%, #fff); color: var(--cat-cor);
+    font-size: .78rem;
+  }
+  .cg-previa-etiqueta i { width: 8px; height: 8px; border-radius: 50%; background: var(--cat-cor); }
+  @media (max-width: 520px) { .cg-paleta { grid-template-columns: repeat(5, 1fr); } }
+
   .busca-caixa { position: relative; }
   .busca-caixa svg {
     position: absolute; left: .7rem; top: 50%;
@@ -109,6 +200,11 @@
           </svg>
           <input class="campo" id="busca" type="search" placeholder="Buscar painel..." aria-label="Buscar dashboard">
         </div>
+        <button type="button" class="btn btn-contorno" id="btn-categorias" hidden title="Criar, renomear, colorir e excluir categorias">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" style="width:15px;height:15px"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+          Categorias
+        </button>
         <a href="index.html" class="btn btn-primario" id="btn-novo" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" style="width:15px;height:15px"><path d="M12 5v14M5 12h14"/></svg>
@@ -118,9 +214,60 @@
     </header>
 
     <div class="corpo">
+      <div class="cat-filtros" id="filtros" role="toolbar" aria-label="Filtrar por categoria" hidden></div>
       <div id="grade" class="grade"></div>
     </div>
   </main>
+</div>
+
+<div class="modal-fundo" id="modal-categorias" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cg-titulo" style="max-width:32rem">
+
+    <!-- Tela 1: lista de categorias -->
+    <div id="cg-vista-lista">
+      <h2 class="modal-titulo" id="cg-titulo">Categorias</h2>
+      <p class="modal-texto" style="margin-bottom:1rem">Organize os painéis por categoria. Cada uma tem nome e cor próprios.</p>
+      <div class="cg-lista" id="cg-lista"></div>
+      <div class="modal-acoes" style="margin-top:1.2rem; justify-content:space-between">
+        <button type="button" class="btn btn-primario" id="cg-nova">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+               style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>
+          Nova categoria
+        </button>
+        <button type="button" class="btn btn-contorno" id="cg-fechar">Fechar</button>
+      </div>
+    </div>
+
+    <!-- Tela 2: criar / editar (nome + cor) -->
+    <form id="cg-vista-editar" hidden>
+      <h2 class="modal-titulo" id="cg-editar-titulo">Editar categoria</h2>
+
+      <label class="cg-rotulo" for="cg-nome">Nome</label>
+      <input class="campo" id="cg-nome" type="text" maxlength="80" placeholder="Ex.: Avanço Físico" required>
+
+      <span class="cg-rotulo">Cor</span>
+      <div class="cg-paleta" id="cg-paleta" role="radiogroup" aria-label="Cores prontas"></div>
+
+      <div class="cg-livre">
+        <label class="cg-seletor" title="Escolher qualquer cor">
+          <input type="color" id="cg-cor-seletor" aria-label="Escolher qualquer cor">
+          <span>Escolher outra cor</span>
+        </label>
+        <input class="campo cg-hex" id="cg-cor-hex" type="text" maxlength="7" spellcheck="false"
+               placeholder="#0A6CF0" aria-label="Código da cor (#RRGGBB)">
+      </div>
+
+      <div class="cg-previa">
+        <span>Como fica:</span>
+        <span class="cg-previa-etiqueta" id="cg-previa"><i></i><b id="cg-previa-nome">Categoria</b></span>
+      </div>
+
+      <div class="modal-acoes" style="margin-top:1.3rem">
+        <button type="button" class="btn btn-contorno" id="cg-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="cg-salvar">Salvar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script src="assets/ui.js"></script>
@@ -136,11 +283,17 @@
   const ICONE_PAINEL =
     '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 3.5-4 3 2.5L20 7"/>';
 
-  function cartao(d) {
+  /** Só cores #RRGGBB vão para o style: o servidor já garante, isto é a segunda tranca. */
+  const corValida = cor => /^#[0-9a-f]{6}$/i.test(cor || '') ? cor : null;
+
+  /** `mostrarCategoria`: na grade misturada (busca ou sem seções) o cartão diz de qual categoria é. */
+  function cartao(d, mostrarCategoria) {
     const ehAdmin = usuario && usuario.papel === 'admin';
+    const cor = d.categoria && corValida(d.categoria.cor);
 
     const artigo = document.createElement('article');
-    artigo.className = 'cartao cartao-hover painel-cartao surgir';
+    artigo.className = 'cartao cartao-hover painel-cartao surgir' + (cor ? ' com-cor' : '');
+    if (cor) artigo.style.setProperty('--cat-cor', cor);
 
     const corpo = document.createElement('a');
     corpo.className = 'pc-corpo';
@@ -149,6 +302,7 @@
     const icone = document.createElement('div');
     icone.className = 'pc-icone';
     icone.innerHTML = UHNUI.icone(ICONE_PAINEL, 19);
+
 
     const titulo = document.createElement('h3');
     titulo.className = 'pc-titulo';
@@ -159,7 +313,15 @@
     desc.className = 'pc-desc duas-linhas';
     desc.textContent = d.descricao || 'Sem descrição.';
 
-    corpo.append(icone, titulo, desc);
+    corpo.append(icone);
+    if (mostrarCategoria && d.categoria) {
+      const etiqueta = document.createElement('div');
+      etiqueta.className = 'pc-cat';
+      etiqueta.appendChild(document.createElement('i'));
+      etiqueta.append(d.categoria.nome);
+      corpo.appendChild(etiqueta);
+    }
+    corpo.append(titulo, desc);
 
     if (d.fontes && d.fontes.length) {
       const fontes = document.createElement('div');
@@ -236,31 +398,344 @@
     return div;
   }
 
+  // ---------------------------------------------------------------------
+  // Categorias
+  // ---------------------------------------------------------------------
+  const SEM_CATEGORIA = '';            // valor do filtro "Sem categoria"
+  let categoriaFiltro = null;          // null = todas
+  const ICONE_CATEGORIA = '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>';
+
+  const nomeCategoria = d => d.categoria ? d.categoria.nome : SEM_CATEGORIA;
+
+  /** Categorias em ordem alfabética, cada uma com seus painéis; "Sem categoria" sempre por último. */
+  function agruparPorCategoria(lista) {
+    const grupos = new Map();
+    lista.forEach(d => {
+      const c = nomeCategoria(d);
+      if (!grupos.has(c)) grupos.set(c, []);
+      grupos.get(c).push(d);
+    });
+    return [...grupos.entries()].sort(([a], [b]) =>
+      a === SEM_CATEGORIA ? 1 : b === SEM_CATEGORIA ? -1 : a.localeCompare(b, 'pt-BR', { numeric: true }));
+  }
+
+  /** Cor de um grupo: a da categoria do primeiro painel dele (todos têm a mesma). */
+  const corDoGrupo = lista => lista[0] && lista[0].categoria ? corValida(lista[0].categoria.cor) : null;
+
+  /** O filtro fica no endereço (?categoria=Obras): dá para mandar o link e o menu lateral aponta para ele. */
+  function lerFiltroDaUrl() {
+    const valor = new URLSearchParams(location.search).get('categoria');
+    categoriaFiltro = valor === null ? null : valor;
+  }
+
+  function escolherCategoria(valor) {
+    categoriaFiltro = valor;
+    const url = new URL(location.href);
+    if (valor === null) url.searchParams.delete('categoria');
+    else url.searchParams.set('categoria', valor);
+    history.replaceState(null, '', url);
+    renderizar();
+  }
+
+  function desenharFiltros() {
+    const barra = document.getElementById('filtros');
+    const grupos = agruparPorCategoria(dashboards);
+    // Sem nenhuma categoria definida, os filtros só ocupariam espaço.
+    barra.hidden = !grupos.some(([c]) => c !== SEM_CATEGORIA);
+    if (barra.hidden) { categoriaFiltro = null; return; }
+    if (categoriaFiltro !== null && !grupos.some(([c]) => c === categoriaFiltro)) categoriaFiltro = null;
+
+    const pilula = (rotulo, valor, quantidade, cor) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cat-filtro';
+      b.setAttribute('aria-pressed', String(categoriaFiltro === valor));
+      if (cor) {
+        const ponto = document.createElement('i');
+        ponto.style.background = cor;
+        b.appendChild(ponto);
+      }
+      const nome = document.createElement('span');
+      nome.textContent = rotulo;
+      const n = document.createElement('b');
+      n.textContent = quantidade;
+      b.append(nome, n);
+      b.addEventListener('click', () => escolherCategoria(valor));
+      return b;
+    };
+    barra.replaceChildren(
+      pilula('Todas', null, dashboards.length),
+      ...grupos.map(([c, lista]) => pilula(c === SEM_CATEGORIA ? 'Sem categoria' : c, c, lista.length, corDoGrupo(lista))));
+  }
+
+  function secao(categoria, lista) {
+    const sec = document.createElement('section');
+    sec.className = 'cat-secao' + (categoria === SEM_CATEGORIA ? ' sem-categoria' : '');
+    const cor = corDoGrupo(lista);
+    if (cor) sec.style.setProperty('--cat-cor', cor);
+    const titulo = document.createElement('h2');
+    titulo.className = 'cat-titulo';
+    titulo.innerHTML = UHNUI.icone(ICONE_CATEGORIA, 16);
+    titulo.append(categoria === SEM_CATEGORIA ? 'Sem categoria' : categoria);
+    const n = document.createElement('span');
+    n.textContent = lista.length + (lista.length === 1 ? ' painel' : ' painéis');
+    titulo.appendChild(n);
+    const g = document.createElement('div');
+    g.className = 'grade';
+    lista.forEach(d => g.appendChild(cartao(d)));
+    sec.append(titulo, g);
+    return sec;
+  }
+
   function renderizar() {
+    desenharFiltros();
     const termo = campoBusca.value.trim().toLowerCase();
+    const naCategoria = categoriaFiltro === null ? dashboards
+      : dashboards.filter(d => nomeCategoria(d) === categoriaFiltro);
     const visiveis = termo
-      ? dashboards.filter(d =>
+      ? naCategoria.filter(d =>
           d.titulo.toLowerCase().includes(termo) ||
           (d.descricao || '').toLowerCase().includes(termo) ||
+          nomeCategoria(d).toLowerCase().includes(termo) ||
           (d.fontes || []).some(f => f.toLowerCase().includes(termo)))
-      : dashboards;
+      : naCategoria;
 
     document.getElementById('contagem').textContent =
       !dashboards.length ? 'Nenhum painel publicado'
-      : termo ? visiveis.length + ' de ' + dashboards.length + ' painéis'
+      : termo || categoriaFiltro !== null ? visiveis.length + ' de ' + dashboards.length + ' painéis'
       : dashboards.length + (dashboards.length === 1 ? ' painel publicado' : ' painéis publicados');
 
     grade.innerHTML = '';
     if (!visiveis.length) {
+      grade.className = 'grade';
       grade.appendChild(dashboards.length
-        ? vazio('Nada encontrado', 'Nenhum painel corresponde a "' + campoBusca.value.trim() + '".')
+        ? vazio('Nada encontrado', termo
+            ? 'Nenhum painel corresponde a "' + campoBusca.value.trim() + '".'
+            : 'Nenhum painel nesta categoria.')
         : vazio('Nenhum painel ainda',
                 usuario && usuario.papel === 'admin'
                   ? 'Clique em "Novo painel" para criar o primeiro.'
                   : 'Assim que um administrador publicar um painel, ele aparece aqui.'));
       return;
     }
-    visiveis.forEach(d => grade.appendChild(cartao(d)));
+
+    // Com categorias em uso e sem filtro, uma seção por categoria; senão, a grade simples de antes.
+    const grupos = agruparPorCategoria(visiveis);
+    const emSecoes = categoriaFiltro === null && grupos.some(([c]) => c !== SEM_CATEGORIA);
+    grade.className = emSecoes ? '' : 'grade';
+    if (emSecoes) grupos.forEach(([c, lista]) => grade.appendChild(secao(c, lista)));
+    else visiveis.forEach(d => grade.appendChild(cartao(d, categoriaFiltro === null)));
+  }
+
+  // ---------------------------------------------------------------------
+  // Gerenciar categorias (admin): lista com Editar/Excluir + formulário de nome e cor
+  // ---------------------------------------------------------------------
+  let categoriasMudaram = false;
+  let paletaCategorias = [];
+  let categoriasCadastradas = [];
+  let editandoCategoria = null;     // null = criando uma nova
+  let corEscolhida = '#0a6cf0';
+  const $cg = id => document.getElementById(id);
+
+  async function chamarCategorias(metodo, caminho, corpo) {
+    const resp = await fetch('/api/categorias' + (caminho || ''), {
+      method: metodo, credentials: 'same-origin',
+      headers: corpo ? { 'Content-Type': 'application/json' } : undefined,
+      body: corpo ? JSON.stringify(corpo) : undefined
+    });
+    const dados = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(dados.error || 'Não foi possível salvar.');
+    if (metodo !== 'GET') categoriasMudaram = true;
+    return dados;
+  }
+
+  function botaoAcao(rotulo, icone, aoClicar, perigo) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cg-acao' + (perigo ? ' perigo' : '');
+    b.innerHTML = UHNUI.icone(icone, 13);
+    b.append(rotulo);
+    b.addEventListener('click', aoClicar);
+    return b;
+  }
+
+  function linhaCategoria(c) {
+    const linha = document.createElement('div');
+    linha.className = 'cg-linha';
+
+    const ponto = document.createElement('i');
+    ponto.className = 'cg-ponto';
+    ponto.style.background = corValida(c.cor) || '#475467';
+
+    const nome = document.createElement('span');
+    nome.className = 'cg-nome';
+    nome.textContent = c.nome;
+    nome.title = c.nome;
+
+    const qtd = document.createElement('span');
+    qtd.className = 'cg-qtd';
+    qtd.textContent = c.paineis + (c.paineis === 1 ? ' painel' : ' painéis');
+
+    const editar = botaoAcao('Editar', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      () => abrirEdicao(c));
+    editar.setAttribute('aria-label', 'Editar ' + c.nome);
+
+    const excluir = botaoAcao('Excluir', '<path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>',
+      async () => {
+        const ok = await UHNUI.confirmar({
+          titulo: 'Excluir categoria',
+          texto: '"' + c.nome + '" será excluída.' + (c.paineis
+            ? '\n' + (c.paineis === 1 ? 'O painel dela fica' : 'Os ' + c.paineis + ' painéis dela ficam') + ' em "Sem categoria" — nenhum painel é apagado.'
+            : ''),
+          confirmar: 'Excluir', perigo: true
+        });
+        if (!ok) return;
+        try {
+          await chamarCategorias('DELETE', '/' + encodeURIComponent(c.id));
+          UHNUI.aviso('Categoria excluída.', 'sucesso');
+          await carregarListaCategorias();
+        } catch (err) { UHNUI.aviso(err.message, 'erro'); }
+      }, true);
+    excluir.setAttribute('aria-label', 'Excluir ' + c.nome);
+
+    linha.append(ponto, nome, qtd, editar, excluir);
+    return linha;
+  }
+
+  async function carregarListaCategorias() {
+    const lista = $cg('cg-lista');
+    lista.innerHTML = '<p class="cg-vazio">Carregando...</p>';
+    const mudou = categoriasMudaram;
+    const { categorias, paleta } = await chamarCategorias('GET');
+    categoriasMudaram = mudou;
+    paletaCategorias = paleta.map(p => p.toLowerCase());
+    categoriasCadastradas = categorias;
+    if (!categorias.length) {
+      lista.innerHTML = '<p class="cg-vazio">Nenhuma categoria ainda. Crie a primeira em "Nova categoria" ' +
+        '— ou digite uma no editor ao publicar um painel.</p>';
+      return;
+    }
+    lista.replaceChildren(...categorias.map(linhaCategoria));
+  }
+
+  function mostrarVista(qual) {
+    $cg('cg-vista-lista').hidden = qual !== 'lista';
+    $cg('cg-vista-editar').hidden = qual !== 'editar';
+  }
+
+  async function abrirCategorias() {
+    $cg('modal-categorias').style.display = 'grid';
+    categoriasMudaram = false;
+    mostrarVista('lista');
+    try { await carregarListaCategorias(); }
+    catch (err) { $cg('cg-lista').innerHTML = ''; UHNUI.aviso(err.message, 'erro'); }
+  }
+
+  function fecharCategorias() {
+    $cg('modal-categorias').style.display = 'none';
+    // Recarrega para a lista e o menu lateral mostrarem nomes e cores novos.
+    if (categoriasMudaram) location.reload();
+  }
+
+  // --- Formulário ------------------------------------------------------
+  const hexValido = s => /^#[0-9a-f]{6}$/i.test(s);
+
+  /** Aplica a cor em tudo: seletor, código, amostra marcada e pré-visualização. */
+  function definirCor(cor, origem) {
+    corEscolhida = cor.toLowerCase();
+    if (origem !== 'seletor') $cg('cg-cor-seletor').value = corEscolhida;
+    if (origem !== 'hex') { $cg('cg-cor-hex').value = corEscolhida.toUpperCase(); $cg('cg-cor-hex').classList.remove('invalido'); }
+    $cg('cg-paleta').querySelectorAll('.cg-amostra').forEach(a =>
+      a.setAttribute('aria-checked', String(a.dataset.cor === corEscolhida)));
+    $cg('cg-previa').style.setProperty('--cat-cor', corEscolhida);
+  }
+
+  function desenharPaleta() {
+    $cg('cg-paleta').replaceChildren(...paletaCategorias.map(cor => {
+      const a = document.createElement('button');
+      a.type = 'button';
+      a.className = 'cg-amostra';
+      a.dataset.cor = cor;
+      a.style.background = cor;
+      a.setAttribute('role', 'radio');
+      a.setAttribute('aria-label', 'Cor ' + cor.toUpperCase());
+      a.title = cor.toUpperCase();
+      a.addEventListener('click', () => definirCor(cor));
+      return a;
+    }));
+  }
+
+  function abrirEdicao(categoria) {
+    editandoCategoria = categoria || null;
+    $cg('cg-editar-titulo').textContent = categoria ? 'Editar categoria' : 'Nova categoria';
+    $cg('cg-salvar').textContent = categoria ? 'Salvar' : 'Criar categoria';
+    $cg('cg-nome').value = categoria ? categoria.nome : '';
+    $cg('cg-previa-nome').textContent = categoria ? categoria.nome : 'Nova categoria';
+    desenharPaleta();
+    // Nova: sugere a primeira cor da paleta que ainda não está em uso.
+    const usadas = new Set(categoriasCadastradas.map(c => c.cor.toLowerCase()));
+    const sugestao = paletaCategorias.find(p => !usadas.has(p)) || paletaCategorias[0] || '#0a6cf0';
+    definirCor(categoria ? (corValida(categoria.cor) || sugestao) : sugestao);
+    mostrarVista('editar');
+    setTimeout(() => $cg('cg-nome').focus(), 30);
+  }
+
+  async function salvarCategoria(e) {
+    e.preventDefault();
+    const nome = $cg('cg-nome').value.trim();
+    if (!nome) { $cg('cg-nome').focus(); return; }
+    if (!hexValido(corEscolhida)) {
+      $cg('cg-cor-hex').classList.add('invalido');
+      UHNUI.aviso('Cor inválida. Use o formato #RRGGBB, por exemplo #FF6600.', 'alerta');
+      return;
+    }
+    const botao = $cg('cg-salvar');
+    botao.disabled = true;
+    try {
+      if (editandoCategoria) {
+        await chamarCategorias('PUT', '/' + encodeURIComponent(editandoCategoria.id), { nome, cor: corEscolhida });
+        UHNUI.aviso('Categoria atualizada.', 'sucesso');
+      } else {
+        await chamarCategorias('POST', '', { nome, cor: corEscolhida });
+        UHNUI.aviso('Categoria criada.', 'sucesso');
+      }
+      mostrarVista('lista');
+      await carregarListaCategorias();
+    } catch (err) {
+      UHNUI.aviso(err.message, 'erro');
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  function ligarGerenciadorCategorias() {
+    $cg('btn-categorias').hidden = false;
+    $cg('btn-categorias').addEventListener('click', abrirCategorias);
+    $cg('cg-fechar').addEventListener('click', fecharCategorias);
+    $cg('cg-nova').addEventListener('click', () => abrirEdicao(null));
+    $cg('cg-cancelar').addEventListener('click', () => mostrarVista('lista'));
+    $cg('cg-vista-editar').addEventListener('submit', salvarCategoria);
+    $cg('cg-nome').addEventListener('input', () => {
+      $cg('cg-previa-nome').textContent = $cg('cg-nome').value.trim() || 'Nova categoria';
+    });
+    // Seletor livre: "input" acompanha o arrasto, sem salvar nada até clicar em Salvar.
+    $cg('cg-cor-seletor').addEventListener('input', e => definirCor(e.target.value, 'seletor'));
+    $cg('cg-cor-hex').addEventListener('input', e => {
+      let v = e.target.value.trim();
+      if (v && v[0] !== '#') v = '#' + v;
+      const ok = hexValido(v);
+      e.target.classList.toggle('invalido', !ok && v.length >= 7);
+      if (ok) definirCor(v, 'hex');
+    });
+    $cg('modal-categorias').addEventListener('click', e => {
+      if (e.target.id === 'modal-categorias') fecharCategorias();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || $cg('modal-categorias').style.display === 'none') return;
+      // Esc no formulário volta à lista; na lista, fecha.
+      if (!$cg('cg-vista-editar').hidden) mostrarVista('lista');
+      else fecharCategorias();
+    });
   }
 
   async function remover(d) {
@@ -325,8 +800,12 @@
       return;
     }
 
-    if (usuario.papel === 'admin') document.getElementById('btn-novo').hidden = false;
+    if (usuario.papel === 'admin') {
+      document.getElementById('btn-novo').hidden = false;
+      ligarGerenciadorCategorias();
+    }
 
+    lerFiltroDaUrl();
     esqueletos();
     try {
       const resp = await fetch('/api/dashboards', { credentials: 'same-origin' });

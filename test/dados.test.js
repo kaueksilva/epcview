@@ -154,3 +154,87 @@ test('garantirAdmin cria o primeiro admin uma única vez', async () => {
     const { usuario } = await db.autenticar('admin', senha);
     assert.equal(usuario.papel, 'admin');
 });
+
+test('arquivo do sistema (foto do início) maior que uma parte volta inteiro e pode ser trocado e removido', async () => {
+    const grande = crypto.randomBytes(5 * 1024 * 1024 + 123);   // 3 partes de 2 MB
+    const salvo = await db.salvarArquivoSistema('inicio-fundo', grande, 'image/jpeg');
+    assert.equal(salvo.tamanho, grande.length);
+
+    const lido = await db.lerArquivoSistema('inicio-fundo');
+    assert.equal(lido.tipo, 'image/jpeg');
+    assert.ok(lido.dados.equals(grande));
+    assert.equal(lido.sha1, crypto.createHash('sha1').update(grande).digest('hex'));
+
+    const pequeno = Buffer.from('outra foto');
+    await db.salvarArquivoSistema('inicio-fundo', pequeno, 'image/png');
+    assert.ok((await db.lerArquivoSistema('inicio-fundo')).dados.equals(pequeno));   // partes antigas não sobram
+
+    await db.removerArquivoSistema('inicio-fundo');
+    assert.equal(await db.lerArquivoSistema('inicio-fundo'), null);
+});
+
+test('categorias: criar com cor da paleta ou escolhida, nome único sem diferenciar maiúsculas/acentos', async () => {
+    const obras = await db.criarCategoria({ nome: '  Obras   Civis ' });
+    assert.equal(obras.nome, 'Obras Civis');
+    assert.equal(obras.cor, db.PALETA_CATEGORIAS[0].toLowerCase());   // 1ª cor da paleta, em minúsculas
+    const sms = await db.criarCategoria({ nome: 'SMS', cor: '#AA00FF' });
+    assert.equal(sms.cor, '#aa00ff');
+    await assert.rejects(db.criarCategoria({ nome: 'obras civís' }), { status: 409 });
+    await assert.rejects(db.criarCategoria({ nome: 'X', cor: 'red' }), { status: 400 });
+    await assert.rejects(db.criarCategoria({ nome: '   ' }), { status: 400 });
+
+    const editada = await db.atualizarCategoria(sms.id, { nome: 'Segurança', cor: '#123456' });
+    assert.deepEqual([editada.nome, editada.cor], ['Segurança', '#123456']);
+    await assert.rejects(db.atualizarCategoria(sms.id, { nome: 'OBRAS CIVIS' }), { status: 409 });
+    assert.deepEqual((await db.listarCategorias()).map(c => c.nome), ['Obras Civis', 'Segurança']);
+});
+
+test('painel: categoria por nome (cria ou reaproveita), por id, mantida se omitida e limpa se vazia', async () => {
+    const a = await db.salvarDashboard({ titulo: 'Curva S', categoria: 'Financeiro', codigo: 'x' }, autor);
+    assert.equal(a.categoria.nome, 'Financeiro');
+    assert.match(a.categoria.cor, /^#[0-9a-f]{6}$/i);
+
+    const b = await db.salvarDashboard({ titulo: 'Medições', categoria: 'financeiro', codigo: 'x' }, autor);
+    assert.equal(b.categoriaId, a.categoriaId);                       // mesma categoria, não duplicou
+    assert.equal((await db.listarCategorias()).length, 1);
+
+    const semCampo = await db.salvarDashboard({ id: a.id, titulo: 'Curva S', codigo: 'y' }, autor);
+    assert.equal(semCampo.categoriaId, a.categoriaId);                // cliente antigo não apaga
+
+    const outra = await db.criarCategoria({ nome: 'Obras' });
+    assert.equal((await db.salvarDashboard({ id: a.id, titulo: 'Curva S', categoriaId: outra.id, codigo: 'y' }, autor)).categoria.nome, 'Obras');
+    await assert.rejects(db.salvarDashboard({ id: a.id, titulo: 'Curva S', categoriaId: 'nao-existe', codigo: 'y' }, autor), { status: 400 });
+    assert.equal((await db.salvarDashboard({ id: a.id, titulo: 'Curva S', categoria: '', codigo: 'y' }, autor)).categoria, null);
+
+    assert.equal((await db.duplicarDashboard(b.id, autor)).categoriaId, b.categoriaId);
+    const lista = await db.listarCategorias();
+    assert.equal(lista.find(c => c.nome === 'Financeiro').paineis, 2);
+});
+
+test('excluir categoria deixa os painéis dela "Sem categoria", sem apagá-los', async () => {
+    const p = await db.salvarDashboard({ titulo: 'Painel', categoria: 'Temporária', codigo: 'x' }, autor);
+    await db.removerCategoria(p.categoriaId);
+    const depois = await db.acharDashboard(p.id);
+    assert.ok(depois, 'o painel continua existindo');
+    assert.equal(depois.categoria, null);
+    await assert.rejects(db.removerCategoria(p.categoriaId), { status: 404 });
+});
+
+test('migração: a coluna de texto "categoria" da 1ª versão vira registros em categorias e é removida', async () => {
+    const a = await db.salvarDashboard({ titulo: 'A', codigo: 'x' }, autor);
+    const b = await db.salvarDashboard({ titulo: 'B', codigo: 'x' }, autor);
+    await db.salvarDashboard({ titulo: 'C', codigo: 'x' }, autor);
+    // Simula o banco como ficou depois da primeira versão das categorias.
+    await db.consultar('ALTER TABLE dashboards ADD COLUMN categoria VARCHAR(80) NULL');
+    await db.consultar("UPDATE dashboards SET categoria = 'Avanço Físico' WHERE id IN (?, ?)", [a.id, b.id]);
+
+    await db.encerrar();
+    await db.iniciar();   // é aqui que a migração roda, como no servidor
+
+    const [coluna] = await db.consultar(
+        "SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'dashboards' AND COLUMN_NAME = 'categoria'");
+    assert.equal(Number(coluna.n), 0, 'a coluna antiga saiu');
+    const categorias = await db.listarCategorias();
+    assert.deepEqual(categorias.map(c => [c.nome, c.paineis]), [['Avanço Físico', 2]]);
+    assert.equal((await db.acharDashboard(a.id)).categoria.nome, 'Avanço Físico');
+});

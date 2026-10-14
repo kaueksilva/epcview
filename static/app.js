@@ -491,6 +491,7 @@
             id: idAtual,
             titulo: $('titulo').value,
             descricao: $('descricao').value,
+            categoria: $('categoria').value,
             fontes: fontes,
             codigo: editor ? editor.getValue() : ''
         });
@@ -526,6 +527,8 @@
         idAtual = r.id || null;
         $('titulo').value = r.titulo || '';
         $('descricao').value = r.descricao || '';
+        $('categoria').value = r.categoria || '';
+        mostrarCorCategoria();
         fontes = Array.isArray(r.fontes) ? r.fontes : [];
         editor.setValue(r.codigo);
         desenharChips();
@@ -545,6 +548,8 @@
             idAtual = d.id;
             $('titulo').value = d.titulo || '';
             $('descricao').value = d.descricao || '';
+            $('categoria').value = d.categoria ? d.categoria.nome : '';
+            mostrarCorCategoria();
             fontes = Array.isArray(d.fontes) ? d.fontes.slice() : [];
             editor.setValue(d.codigo || '');
 
@@ -593,6 +598,7 @@
                 body: JSON.stringify({
                     id: idAtual, titulo,
                     descricao: $('descricao').value.trim(),
+                    categoria: $('categoria').value.trim(),
                     codigo: editor.getValue(),
                     fontes
                 })
@@ -601,6 +607,9 @@
             if (!resp.ok) throw new Error(dados.error || 'Falha ao publicar.');
 
             idAtual = dados.id;
+            // O servidor pode ter ajustado a grafia ("obras" → "Obras", se já existia assim).
+            $('categoria').value = dados.categoria ? dados.categoria.nome : '';
+            carregarCategorias();
             mostrarLinkAbrir(dados.id);
             salvoRecentemente = instantaneo();
             marcarAlteracao();
@@ -862,6 +871,7 @@
 
         $('titulo').addEventListener('input', marcarAlteracao);
         $('descricao').addEventListener('input', marcarAlteracao);
+        $('categoria').addEventListener('input', () => { marcarAlteracao(); mostrarCorCategoria(); });
 
         $('btn-console').addEventListener('click', () => {
             const visivel = $('console').classList.toggle('visivel');
@@ -893,6 +903,37 @@
         });
     }
 
+    // Categorias cadastradas (nome → cor), para as sugestões e a bolinha de cor do campo.
+    let coresCategorias = new Map();
+    const chaveCategoria = s => String(s || '').trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+    /** Sugestões do campo Categoria: as categorias cadastradas (com cor). */
+    async function carregarCategorias() {
+        try {
+            const resp = await fetch('/api/categorias', { credentials: 'same-origin' });
+            if (!resp.ok) return;
+            const { categorias } = await resp.json();
+            coresCategorias = new Map(categorias.map(c => [chaveCategoria(c.nome), c.cor]));
+            $('lista-categorias').replaceChildren(...categorias.map(c => {
+                const o = document.createElement('option');
+                o.value = c.nome;
+                return o;
+            }));
+            mostrarCorCategoria();
+        } catch { /* sem sugestões: o campo continua aceitando texto livre */ }
+    }
+
+    /** Bolinha no campo: a cor da categoria digitada; tracejada se for nova (ganha cor ao publicar). */
+    function mostrarCorCategoria() {
+        const nome = $('categoria').value.trim();
+        const cor = coresCategorias.get(chaveCategoria(nome));
+        const ponto = $('categoria-cor');
+        ponto.hidden = !nome;
+        ponto.classList.toggle('nova', !cor);
+        ponto.style.background = cor || '';
+        ponto.title = cor ? '' : 'Categoria nova: recebe uma cor ao publicar (dá para trocar em Dashboards → Categorias).';
+    }
+
     (async function iniciar() {
         usuario = await UHNUI.montarBarraLateral('editor');
         if (!usuario) return;
@@ -915,5 +956,6 @@
         ligarEventos();
         iniciarMonaco();
         carregarPlanilhas();
+        carregarCategorias();
     })();
 })();

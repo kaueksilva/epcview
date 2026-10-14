@@ -44,7 +44,7 @@
         .then(r => (r.ok ? r.json() : null))
         .then(dados => {
             if (!dados || !dados.usuario) return;
-            document.querySelectorAll('[data-acesso]').forEach(a => { a.href = '/lista_dashboards.html'; });
+            document.querySelectorAll('[data-acesso]').forEach(a => { a.href = '/inicio.html'; });
             document.querySelectorAll('[data-acesso-rotulo]').forEach(s => { s.textContent = 'Ir para o painel'; });
             const menuEntrar = document.querySelector('.menu-entrar');
             if (menuEntrar) menuEntrar.textContent = 'Ir para o painel';

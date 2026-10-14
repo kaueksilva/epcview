@@ -136,6 +136,55 @@ t('restaurar versão de planilha é só para administrador', async () => {
     assert.equal((await db.lerPlanilha('P50.xlsx')).dados.toString(), 'um');
 });
 
+t('foto de fundo do início: todos veem, só o administrador troca, e só imagem', async () => {
+    const chefe = await entrar('chefe', 'Chefe123');
+    const leitor = await entrar('leitor', 'Leitor123');
+    const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    const enviar = (quem, corpo) => quem('/api/inicio/fundo', { method: 'PUT', body: corpo, headers: { 'Content-Type': 'image/png' } });
+
+    assert.equal((await fetch(BASE + '/api/inicio/fundo')).status, 401);       // sem login
+    assert.equal((await leitor('/api/inicio/fundo')).status, 404);             // ainda sem foto: a página usa o degradê
+    assert.equal((await enviar(leitor, PNG)).status, 403);
+    assert.equal((await enviar(chefe, Buffer.from('<svg><script>alert(1)</script></svg>'))).status, 400);
+    assert.equal((await enviar(chefe, PNG)).status, 200);
+
+    const foto = await leitor('/api/inicio/fundo');
+    assert.equal(foto.status, 200);
+    assert.equal(foto.headers.get('content-type'), 'image/png');
+    assert.deepEqual(Buffer.from(await foto.arrayBuffer()), PNG);
+    const etag = foto.headers.get('etag');
+    assert.equal((await leitor('/api/inicio/fundo', { headers: { 'If-None-Match': etag } })).status, 304);
+
+    assert.equal((await leitor('/api/inicio/fundo', { method: 'DELETE' })).status, 403);
+    assert.equal((await chefe('/api/inicio/fundo', { method: 'DELETE' })).status, 200);
+    assert.equal((await leitor('/api/inicio/fundo')).status, 404);
+});
+
+t('categorias: todos listam, só o administrador cria, edita e exclui', async () => {
+    const chefe = await entrar('chefe', 'Chefe123');
+    const leitor = await entrar('leitor', 'Leitor123');
+
+    const resp = await leitor('/api/categorias');
+    assert.equal(resp.status, 200);
+    assert.ok(Array.isArray((await resp.json()).paleta));
+
+    assert.equal((await leitor('/api/categorias', { method: 'POST', body: JSON.stringify({ nome: 'Nope' }) })).status, 403);
+    const criada = await chefe('/api/categorias', { method: 'POST', body: JSON.stringify({ nome: 'Obras', cor: '#0E9384' }) });
+    assert.equal(criada.status, 201);
+    const { id } = await criada.json();
+
+    assert.equal((await leitor('/api/categorias/' + id, { method: 'PUT', body: JSON.stringify({ cor: '#000000' }) })).status, 403);
+    const editada = await chefe('/api/categorias/' + id, { method: 'PUT', body: JSON.stringify({ cor: '#F04438' }) });
+    assert.equal((await editada.json()).cor, '#f04438');
+
+    // O painel publicado com a categoria por nome volta com nome e cor.
+    const painel = await chefe('/api/dashboards', { method: 'POST', body: JSON.stringify({ titulo: 'Com categoria', categoria: 'obras', codigo: '' }) });
+    assert.deepEqual((await painel.json()).categoria, { id, nome: 'Obras', cor: '#f04438' });
+
+    assert.equal((await leitor('/api/categorias/' + id, { method: 'DELETE' })).status, 403);
+    assert.equal((await chefe('/api/categorias/' + id, { method: 'DELETE' })).status, 200);
+});
+
 t('login bloqueia depois de 5 senhas erradas, mesmo acertando em seguida', async () => {
     const tentar = senha => fetch(BASE + '/api/sessao/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.7' },

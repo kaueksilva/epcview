@@ -15,7 +15,7 @@
   /* Cabeçalho do editor -------------------------------------------------- */
   .ed-topo { align-items: center; padding: .7rem 1rem; }
 
-  .ed-identidade { display: flex; align-items: center; gap: .6rem; flex: 1; min-width: 0; max-width: 30rem; }
+  .ed-identidade { display: flex; align-items: center; gap: .6rem; flex: 1; min-width: 0; max-width: 40rem; }
   .ed-identidade > div:nth-child(2) { flex: 1; min-width: 0; }
 
   #titulo, #descricao {
@@ -29,6 +29,24 @@
   #descricao::placeholder { color: var(--texto-3); }
   #titulo:hover, #descricao:hover { background: var(--superficie-2); }
   #titulo:focus, #descricao:focus { outline: none; background: var(--superficie); border-color: var(--azul-500); }
+
+  /* Descrição + categoria na mesma linha, abaixo do nome */
+  .ed-linha2 { display: flex; align-items: center; gap: .4rem; margin-top: .1rem; }
+  .ed-linha2 #descricao { flex: 1; min-width: 0; margin-top: 0; }
+  .ed-categoria {
+    display: flex; align-items: center; gap: .3rem; flex: 0 1 11rem; min-width: 7rem;
+    padding: 0 .45rem; border: 1px solid var(--borda); border-radius: 999px;
+    background: var(--superficie-2); color: var(--texto-3);
+    transition: border-color var(--transicao), background var(--transicao);
+  }
+  .ed-categoria:focus-within { border-color: var(--azul-500); background: var(--superficie); }
+  .ed-categoria input {
+    flex: 1; min-width: 0; height: 1.55rem; border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: .72rem; font-weight: 600; color: var(--texto);
+  }
+  .ed-categoria input::placeholder { color: var(--texto-3); font-weight: 500; }
+  .ed-categoria-cor { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; }
+  .ed-categoria-cor.nova { background: transparent; border: 1.5px dashed var(--texto-3); }
 
   .marca-nao-salvo {
     display: none; align-items: center; gap: .3rem;
@@ -283,7 +301,19 @@
         </div>
         <div>
           <input id="titulo" type="text" placeholder="Nome do painel" aria-label="Nome do painel">
-          <input id="descricao" type="text" placeholder="Descrição curta (opcional)" aria-label="Descrição">
+          <div class="ed-linha2">
+            <input id="descricao" type="text" placeholder="Descrição curta (opcional)" aria-label="Descrição">
+            <label class="ed-categoria" title="Categoria: agrupa o painel na lista e no menu. Escolha uma existente ou digite uma nova.">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0" aria-hidden="true">
+                <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>
+              </svg>
+              <input id="categoria" type="text" list="lista-categorias" maxlength="80"
+                     placeholder="Categoria" aria-label="Categoria do painel" autocomplete="off">
+              <i class="ed-categoria-cor" id="categoria-cor" hidden></i>
+            </label>
+            <datalist id="lista-categorias"></datalist>
+          </div>
         </div>
         <span id="marca-rascunho" class="marca-nao-salvo"><i></i> não salvo</span>
       </div>

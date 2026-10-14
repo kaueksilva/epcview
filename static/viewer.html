@@ -217,7 +217,7 @@
       ? new Date(registro.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
       : null;
     document.getElementById('subtitulo').textContent =
-      [registro.descricao, quando && 'Atualizado em ' + quando].filter(Boolean).join(' · ');
+      [registro.categoria && registro.categoria.nome, registro.descricao, quando && 'Atualizado em ' + quando].filter(Boolean).join(' · ');
 
     if (usuario.papel === 'admin') {
       const editar = document.getElementById('btn-editar');

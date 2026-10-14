@@ -515,6 +515,94 @@ async function rotaGrupos(req, res, segmentos, usuario) {
 // Roteamento da API
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// API: página de início (foto de fundo, guardada no banco como as planilhas)
+// ---------------------------------------------------------------------------
+
+const CHAVE_FUNDO_INICIO = 'inicio-fundo';
+const MAX_FUNDO_BYTES = 8 * 1024 * 1024;
+
+/** Tipo real pelos primeiros bytes; SVG fica de fora (pode carregar script e é servido desta origem). */
+function tipoImagem(dados) {
+    if (!dados || dados.length < 12) return null;
+    if (dados[0] === 0x89 && dados.toString('ascii', 1, 4) === 'PNG') return 'image/png';
+    if (dados[0] === 0xFF && dados[1] === 0xD8 && dados[2] === 0xFF) return 'image/jpeg';
+    if (dados.toString('ascii', 0, 4) === 'RIFF' && dados.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+    return null;
+}
+
+async function rotaInicio(req, res, segmentos, usuario) {
+    exigirLogin(usuario);
+    if (segmentos[2] !== 'fundo') { enviarJSON(res, 404, { error: 'Rota não encontrada.' }); return; }
+
+    if (req.method === 'GET') {
+        const arquivo = await db.lerArquivoSistema(CHAVE_FUNDO_INICIO);
+        if (!arquivo) { enviarJSON(res, 404, { error: 'Sem foto de fundo.' }); return; }
+        // ETag: a foto tem alguns MB e é pedida a cada login — o navegador só baixa de novo se ela mudou.
+        const etag = '"' + arquivo.sha1 + '"';
+        if (req.headers['if-none-match'] === etag) { res.writeHead(304, { ETag: etag }); res.end(); return; }
+        res.writeHead(200, {
+            'Content-Type': arquivo.tipo,
+            'Content-Length': arquivo.dados.length,
+            'Cache-Control': 'private, no-cache',
+            'ETag': etag,
+            'X-Content-Type-Options': 'nosniff'
+        });
+        res.end(arquivo.dados);
+        return;
+    }
+
+    exigirAdmin(usuario);
+
+    if (req.method === 'PUT') {
+        const dados = await lerCorpo(req, MAX_FUNDO_BYTES);
+        const tipo = tipoImagem(dados);
+        if (!tipo) { enviarJSON(res, 400, { error: 'Envie uma foto em JPG, PNG ou WebP.' }); return; }
+        enviarJSON(res, 200, Object.assign({ status: 'ok' }, await db.salvarArquivoSistema(CHAVE_FUNDO_INICIO, dados, tipo)));
+        return;
+    }
+
+    if (req.method === 'DELETE') {
+        await db.removerArquivoSistema(CHAVE_FUNDO_INICIO);
+        enviarJSON(res, 200, { status: 'removida' });
+        return;
+    }
+
+    enviarJSON(res, 405, { error: 'Método não permitido.' });
+}
+
+// ---------------------------------------------------------------------------
+// API: categorias de painéis (nome + cor). Todo usuário vê; só admin altera.
+// ---------------------------------------------------------------------------
+
+async function rotaCategorias(req, res, segmentos, usuario) {
+    exigirLogin(usuario);
+    const id = segmentos[2] ? decodeURIComponent(segmentos[2]) : null;
+
+    if (req.method === 'GET' && !id) {
+        enviarJSON(res, 200, { categorias: await db.listarCategorias(), paleta: db.PALETA_CATEGORIAS });
+        return;
+    }
+
+    exigirAdmin(usuario);
+
+    if (req.method === 'POST' && !id) {
+        enviarJSON(res, 201, await db.criarCategoria(await lerJSON(req)));
+        return;
+    }
+    if ((req.method === 'PUT' || req.method === 'PATCH') && id) {
+        enviarJSON(res, 200, await db.atualizarCategoria(id, await lerJSON(req)));
+        return;
+    }
+    if (req.method === 'DELETE' && id) {
+        await db.removerCategoria(id);
+        enviarJSON(res, 200, { status: 'removida', id });
+        return;
+    }
+
+    enviarJSON(res, 405, { error: 'Método não permitido.' });
+}
+
 async function rotearApi(req, res, url, usuario) {
     const segmentos = url.pathname.split('/').filter(Boolean);   // ['api', recurso, id?]
     const recurso = segmentos[1];
@@ -525,6 +613,8 @@ async function rotearApi(req, res, url, usuario) {
     if (recurso === 'planilhas') return rotaPlanilhas(req, res, segmentos, usuario, url);
     if (recurso === 'exportar') return rotaExportar(req, res, segmentos, usuario, url);
     if (recurso === 'grupos') return rotaGrupos(req, res, segmentos, usuario);
+    if (recurso === 'inicio') return rotaInicio(req, res, segmentos, usuario);
+    if (recurso === 'categorias') return rotaCategorias(req, res, segmentos, usuario);
     if (recurso === 'config') return enviarJSON(res, 200, { sitePublico: SITE_PUBLICO });
 
     enviarJSON(res, 404, { error: 'Rota não encontrada.' });
@@ -544,7 +634,7 @@ function servirEstatico(req, res, url, usuario) {
     if (!SITE_PUBLICO) {
         // Sem site público, a raiz leva direto ao painel (ou ao login).
         if (caminho === '/') {
-            res.writeHead(302, { Location: usuario ? '/lista_dashboards.html' : '/login.html' });
+            res.writeHead(302, { Location: usuario ? '/inicio.html' : '/login.html' });
             res.end();
             return;
         }
@@ -554,7 +644,7 @@ function servirEstatico(req, res, url, usuario) {
             return;
         }
     }
-    // A raiz é o site público; o painel começa em /lista_dashboards.html.
+    // A raiz é o site público; o painel começa em /inicio.html.
     if (caminho === '/' || caminho === '/site' || caminho === PREFIXO_SITE) caminho = PREFIXO_SITE + 'index.html';
 
     // resolve + prefixo fecham o traversal: nem ../ nem %2e%2e escapam de static/

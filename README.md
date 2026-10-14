@@ -84,12 +84,18 @@ sistema depois de criar a própria senha (8+ caracteres, letras e números).
 |---|---|---|
 | Site institucional | `/` (arquivos em `static/site/`) | público |
 | Login | `/login.html` | todos |
+| Início | `/inicio.html` (abre depois do login) | todos (foto de fundo: admin) |
 | Dashboards | `/lista_dashboards.html` | todos |
 | Ver painel | `/viewer.html?id=<id>` | todos |
-| Editor | `/index.html` | admin |
+| Editor de painéis | `/index.html` | admin |
 | Planilhas | `/planilhas.html` | todos (envio: admin) |
-| Usuários | `/usuarios.html` | admin |
+| Usuários e grupos | `/usuarios.html` | admin |
 | Minha conta | `/conta.html` | todos |
+
+A foto de fundo do Início (a refinaria) é enviada pelo administrador na própria
+página, em *Adicionar/Trocar foto de fundo*. O navegador reduz a foto antes de
+enviar e ela fica no banco (tabela `arquivos_sistema`, em partes de 2 MB, como as
+planilhas). Sem foto, a página usa o degradê da marca.
 
 ## Site público
 

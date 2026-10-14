@@ -379,8 +379,8 @@ fetch('/api/config').then(r => r.json()).then(cfg => {
 
   /** Só aceita caminhos internos: evita virar trampolim para outro site. */
   function destinoSeguro() {
-    const bruto = new URLSearchParams(location.search).get('destino') || '/lista_dashboards.html';
-    return /^\/[^/\\]/.test(bruto) ? bruto : '/lista_dashboards.html';
+    const bruto = new URLSearchParams(location.search).get('destino') || '/inicio.html';
+    return /^\/[^/\\]/.test(bruto) ? bruto : '/inicio.html';
   }
 
   form.addEventListener('submit', async e => {

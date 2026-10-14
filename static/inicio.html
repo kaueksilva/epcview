@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Início · EPCVIEW</title>
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* Foto da refinaria ocupando toda a área de conteúdo, com uma camada escura
+     por cima para o texto branco ficar legível sobre qualquer foto. Sem foto,
+     fica o degradê da marca (marinho → azul → ciano). */
+  .in-palco { position: relative; flex: 1; min-height: 0; overflow: hidden; background: linear-gradient(160deg, var(--navy, #071A33) 0%, var(--primary, #0A6CF0) 75%, var(--cyan, #00C2FF) 150%); }
+  .in-foto {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transform: scale(1.03);
+    transition: opacity .8s ease, transform 1.6s ease;
+  }
+  .in-foto.carregada { opacity: 1; transform: none; }
+  .in-veu {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(7, 26, 51, .35) 0%, rgba(7, 26, 51, .55) 38%, rgba(7, 26, 51, .88) 100%),
+      linear-gradient(90deg, rgba(7, 26, 51, .55) 0%, rgba(7, 26, 51, 0) 60%);
+  }
+
+  .in-rolagem { position: relative; height: 100%; overflow-y: auto; }
+  .in-conteudo { max-width: 72rem; margin: 0 auto; padding: 2.4rem 2rem 3rem; }
+
+  /* Cabeçalho: saudação grande sobre a foto */
+  .in-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; min-height: 26vh; }
+  .in-saudacao { color: #fff; max-width: 40rem; }
+  .in-data { margin: 0 0 .5rem; font-size: .8rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
+  .in-saudacao h1 { margin: 0; font-family: var(--font-marca, inherit); font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
+  .in-saudacao p { margin: .7rem 0 0; font-size: 1rem; color: rgba(255, 255, 255, .85); line-height: 1.55; }
+
+  .in-foto-acoes { display: flex; gap: .4rem; }
+  .in-btn-vidro {
+    display: inline-flex; align-items: center; gap: .45rem;
+    height: 2.2rem; padding: 0 .9rem;
+    border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px;
+    background: rgba(255, 255, 255, .12); color: #fff;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-family: inherit; font-size: .76rem; font-weight: 600; cursor: pointer;
+  }
+  .in-btn-vidro:hover { background: rgba(255, 255, 255, .22); }
+  .in-btn-vidro:disabled { opacity: .6; cursor: default; }
+
+  /* Atalhos: cartões claros e translúcidos sobre a foto */
+  .in-atalhos { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin-top: 1.6rem; }
+  .in-atalho {
+    display: flex; align-items: center; gap: .9rem;
+    padding: 1.05rem 1.15rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .97);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+    color: var(--text); text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .in-atalho:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0, 0, 0, .3); }
+  .in-atalho-icone {
+    width: 46px; height: 46px; flex-shrink: 0;
+    display: grid; place-items: center; border-radius: 12px;
+    background: var(--primary-soft, #e6f1f6); color: var(--primary, #0a5b80);
+  }
+  .in-atalho-texto { min-width: 0; }
+  .in-atalho-titulo { display: block; font-size: 1rem; font-weight: 700; color: var(--text); }
+  .in-atalho-detalhe { display: block; margin-top: .15rem; font-size: .76rem; color: var(--text-muted); }
+  .in-atalho-seta { display: grid; margin-left: auto; color: var(--text-light); }
+
+  /* Seções abaixo dos atalhos */
+  .in-secao { margin-top: 2.2rem; }
+  .in-secao-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+  .in-secao h2 { margin: 0; font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .8); }
+  .in-secao-topo a { flex-shrink: 0; white-space: nowrap; font-size: .78rem; font-weight: 600; color: #fff; text-decoration: none; opacity: .8; }
+  .in-secao-topo a:hover { opacity: 1; text-decoration: underline; }
+
+
+  .in-paineis { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: .9rem; }
+  .in-painel {
+    display: flex; flex-direction: column; gap: .35rem;
+    padding: 1rem 1.1rem; border-radius: 14px;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .18);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: #fff; text-decoration: none;
+    transition: background .18s ease, border-color .18s ease;
+  }
+  .in-painel:hover { background: rgba(255, 255, 255, .2); border-color: rgba(255, 255, 255, .35); }
+  .in-painel b { font-size: .92rem; font-weight: 700; overflow-wrap: anywhere; }
+  .in-painel span { font-size: .74rem; color: rgba(255, 255, 255, .72); line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .in-painel small { margin-top: auto; padding-top: .3rem; font-size: .68rem; color: rgba(255, 255, 255, .55); }
+
+  @media (max-width: 900px) {
+    .in-conteudo { padding: 1.5rem 1rem 2.5rem; }
+    .in-hero { min-height: 0; }
+    .in-atalhos { grid-template-columns: 1fr; gap: .7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .in-foto, .in-atalho { transition: none; }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside id="barra-lateral"></aside>
+
+  <main class="conteudo">
+    <div class="in-palco">
+      <div class="in-foto" id="foto" role="img" aria-label="Foto da refinaria"></div>
+      <div class="in-veu" aria-hidden="true"></div>
+
+      <div class="in-rolagem">
+        <div class="in-conteudo">
+          <section class="in-hero">
+            <div class="in-saudacao">
+              <p class="in-data" id="data"></p>
+              <h1 id="saudacao">Bem-vindo</h1>
+              <p>Painéis e planilhas do ciclo EPC em um só lugar.</p>
+            </div>
+            <div class="in-foto-acoes" id="foto-acoes" hidden>
+              <button type="button" class="in-btn-vidro" id="btn-foto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 16-5-5-8 8"/></svg>
+                <span id="btn-foto-rotulo">Trocar foto de fundo</span>
+              </button>
+              <button type="button" class="in-btn-vidro" id="btn-remover-foto" hidden title="Voltar ao fundo padrão">Remover</button>
+              <input type="file" id="arquivo-foto" accept="image/jpeg,image/png,image/webp" hidden>
+            </div>
+          </section>
+
+          <nav class="in-atalhos" id="atalhos" aria-label="Atalhos"></nav>
+
+
+          <section class="in-secao" id="secao-paineis" hidden>
+            <div class="in-secao-topo">
+              <h2>Painéis atualizados recentemente</h2>
+              <a href="lista_dashboards.html">Ver todos →</a>
+            </div>
+            <div class="in-paineis" id="paineis"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/ui.js"></script>
+<script>
+(async function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const URL_FOTO = '/api/inicio/fundo';
+  const MAX_PAINEIS = 6;
+
+  const usuario = await UHNUI.montarBarraLateral('inicio');
+  if (!usuario) return;
+  const ehAdmin = usuario.papel === 'admin';
+  const paginas = (usuario.permissoes && usuario.permissoes.paginas) || 'todos';
+  const podeVer = chave => ehAdmin || paginas === 'todos' || paginas.includes(chave);
+
+  // --- Saudação --------------------------------------------------------
+  const agora = new Date();
+  const hora = agora.getHours();
+  const periodo = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  const primeiroNome = String(usuario.nome || usuario.login || '').trim().split(/\s+/)[0];
+  $('saudacao').textContent = periodo + (primeiroNome ? ', ' + primeiroNome : '');
+  const dataTexto = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('data').textContent = dataTexto.charAt(0).toUpperCase() + dataTexto.slice(1);
+
+  // --- Foto de fundo ---------------------------------------------------
+  let temFoto = false;
+
+  function carregarFoto(semCache) {
+    const img = new Image();
+    const url = URL_FOTO + (semCache ? '?t=' + Date.now() : '');
+    img.onload = () => {
+      temFoto = true;
+      $('foto').style.backgroundImage = 'url("' + url + '")';
+      requestAnimationFrame(() => $('foto').classList.add('carregada'));
+      atualizarBotoesFoto();
+    };
+    img.onerror = () => { temFoto = false; atualizarBotoesFoto(); };
+    img.src = url;
+  }
+
+  function atualizarBotoesFoto() {
+    if (!ehAdmin) return;
+    $('btn-foto-rotulo').textContent = temFoto ? 'Trocar foto de fundo' : 'Adicionar foto de fundo';
+    $('btn-remover-foto').hidden = !temFoto;
+  }
+
+  /** Reduz para no máximo 2560px de largura em JPEG: uma foto de câmera de 10 MB vira ~500 KB. */
+  function prepararFoto(arquivo) {
+    return new Promise((resolver, rejeitar) => {
+      if (!/^image\/(jpeg|png|webp)$/.test(arquivo.type)) { rejeitar(new Error('Use uma foto JPG, PNG ou WebP.')); return; }
+      const url = URL.createObjectURL(arquivo);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const escala = Math.min(1, 2560 / img.naturalWidth, 1600 / img.naturalHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.naturalWidth * escala);
+        canvas.height = Math.round(img.naturalHeight * escala);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => b ? resolver(b) : rejeitar(new Error('Não foi possível processar a foto.')), 'image/jpeg', 0.86);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rejeitar(new Error('Não foi possível abrir essa imagem.')); };
+      img.src = url;
+    });
+  }
+
+  if (ehAdmin) {
+    $('foto-acoes').hidden = false;
+    $('btn-foto').addEventListener('click', () => $('arquivo-foto').click());
+    $('arquivo-foto').addEventListener('change', async e => {
+      const arquivo = e.target.files[0];
+      e.target.value = '';
+      if (!arquivo) return;
+      const botao = $('btn-foto');
+      botao.disabled = true;
+      $('btn-foto-rotulo').textContent = 'Enviando...';
+      try {
+        const blob = await prepararFoto(arquivo);
+        const resp = await fetch(URL_FOTO, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+        const dados = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(dados.error || 'Não foi possível salvar a foto.');
+        $('foto').classList.remove('carregada');
+        carregarFoto(true);
+        UHNUI.aviso('Foto de fundo atualizada para todos.', 'sucesso');
+      } catch (err) {
+        UHNUI.aviso(err.message, 'erro');
+        atualizarBotoesFoto();
+      } finally {
+        botao.disabled = false;
+      }
+    });
+    $('btn-remover-foto').addEventListener('click', async () => {
+      const ok = await UHNUI.confirmar({
+        titulo: 'Remover foto de fundo?',
+        texto: 'A página de início volta ao fundo azul padrão para todos os usuários.',
+        confirmar: 'Remover', perigo: true
+      });
+      if (!ok) return;
+      const resp = await fetch(URL_FOTO, { method: 'DELETE', credentials: 'same-origin' });
+      if (!resp.ok) { UHNUI.aviso('Não foi possível remover a foto.', 'erro'); return; }
+      temFoto = false;
+      $('foto').classList.remove('carregada');
+      setTimeout(() => { $('foto').style.backgroundImage = ''; }, 800);
+      atualizarBotoesFoto();
+      UHNUI.aviso('Foto removida.', 'sucesso');
+    });
+  }
+  carregarFoto(false);
+
+  // --- Dados (cada um falha sozinho, sem derrubar a página) --------------
+  async function buscar(url) {
+    try {
+      const resp = await fetch(url, { credentials: 'same-origin' });
+      if (!resp.ok) return [];
+      const dados = await resp.json();
+      return Array.isArray(dados) ? dados : [];
+    } catch {
+      return [];
+    }
+  }
+
+  const [paineisBrutos, planilhas] = await Promise.all([
+    podeVer('galeria') ? buscar('/api/dashboards') : [],
+    podeVer('planilhas') ? buscar('/api/planilhas') : []
+  ]);
+  const paineis = paineisBrutos.slice().sort((a, b) =>
+    String(b.atualizadoEm || '').localeCompare(String(a.atualizadoEm || '')));
+
+  // --- Atalhos ---------------------------------------------------------
+  const ICONES = {
+    galeria: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+    planilhas: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M3 15h18"/>',
+    editor: '<path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/>',
+    conta: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>'
+  };
+  const plural = (n, um, varios) => n.toLocaleString('pt-BR') + ' ' + (n === 1 ? um : varios);
+  const maisRecente = lista => lista.reduce((max, p) => (p.atualizadoEm && p.atualizadoEm > max ? p.atualizadoEm : max), '');
+
+  const atalhos = [];
+  if (podeVer('galeria')) {
+    atalhos.push({ href: 'lista_dashboards.html', icone: ICONES.galeria, titulo: 'Dashboards',
+      detalhe: paineis.length ? plural(paineis.length, 'painel publicado', 'painéis publicados') : 'Nenhum painel ainda' });
+  }
+  if (podeVer('planilhas')) {
+    const ultima = maisRecente(planilhas);
+    atalhos.push({ href: 'planilhas.html', icone: ICONES.planilhas, titulo: 'Planilhas',
+      detalhe: planilhas.length
+        ? plural(planilhas.length, 'planilha', 'planilhas') + (ultima ? ' · atualizada ' + UHNUI.dataRelativa(ultima) : '')
+        : 'Nenhuma planilha ainda' });
+  }
+  // Terceiro atalho: o admin cria painéis; os demais cuidam da própria conta.
+  if (ehAdmin) {
+    atalhos.push({ href: 'index.html', icone: ICONES.editor, titulo: 'Editor de painéis', detalhe: 'Criar e publicar painéis' });
+  } else {
+    atalhos.push({ href: 'conta.html', icone: ICONES.conta, titulo: 'Minha conta', detalhe: 'Seus dados e sua senha' });
+  }
+
+  atalhos.forEach(a => {
+    const link = document.createElement('a');
+    link.className = 'in-atalho';
+    link.href = a.href;
+    link.innerHTML =
+      '<span class="in-atalho-icone">' + UHNUI.icone(a.icone, 22) + '</span>' +
+      '<span class="in-atalho-texto"><b class="in-atalho-titulo"></b><span class="in-atalho-detalhe"></span></span>' +
+      '<span class="in-atalho-seta">' + UHNUI.icone('<path d="m9 6 6 6-6 6"/>', 18) + '</span>';
+    link.querySelector('.in-atalho-titulo').textContent = a.titulo;
+    link.querySelector('.in-atalho-detalhe').textContent = a.detalhe;
+    $('atalhos').appendChild(link);
+  });
+
+  // --- Painéis atualizados recentemente ---
+  if (paineis.length) {
+    paineis.slice(0, MAX_PAINEIS).forEach(p => {
+      const link = document.createElement('a');
+      link.className = 'in-painel';
+      link.href = 'viewer.html?id=' + encodeURIComponent(p.id);
+      const titulo = document.createElement('b');
+      titulo.textContent = p.titulo || 'Sem título';
+      link.appendChild(titulo);
+      if (p.descricao) {
+        const desc = document.createElement('span');
+        desc.textContent = p.descricao;
+        link.appendChild(desc);
+      }
+      const quando = document.createElement('small');
+      quando.textContent = (p.categoria ? p.categoria.nome + ' · ' : '') + 'Atualizado ' + UHNUI.dataRelativa(p.atualizadoEm);
+      link.appendChild(quando);
+      $('paineis').appendChild(link);
+    });
+    $('secao-paineis').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
