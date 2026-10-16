@@ -28,7 +28,7 @@
   }
 
   /* Lado da marca ----------------------------------------------------------
-     A foto é opcional: site/img/hero.jpg (a mesma do site). Sem ela fica só
+     A foto é opcional: site/img/hero.png (a mesma do site). Sem ela fica só
      o degradê — nada quebra. Transparente o bastante para as partículas
      (no canvas fixo atrás) aparecerem. */
   .lado-marca {
@@ -37,10 +37,10 @@
     padding: 3rem 3.5rem;
     color: #fff;
     background:
-      linear-gradient(100deg, rgba(10, 26, 51, .92) 0%, rgba(10, 26, 51, .66) 55%, rgba(10, 26, 51, .4) 100%),
-      url('site/img/hero.jpg') center / cover no-repeat,
-      radial-gradient(900px 500px at 80% 110%, rgba(0, 194, 255, .22), transparent 60%),
-      linear-gradient(160deg, #0A1A33 0%, #0F2547 60%, #0B3A6B 100%);
+      linear-gradient(100deg, rgba(9, 44, 27, .92) 0%, rgba(9, 44, 27, .66) 55%, rgba(9, 44, 27, .4) 100%),
+      url('site/img/hero.png') center / cover no-repeat,
+      radial-gradient(900px 500px at 80% 110%, rgba(131, 184, 62, .22), transparent 60%),
+      linear-gradient(160deg, #092C1B 0%, #103C26 60%, #1A4A26 100%);
     overflow: hidden;
   }
   .lado-marca > * { position: relative; z-index: 1; }
@@ -152,13 +152,13 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <linearGradient id="epc-v-grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0A6CF0"/><stop offset="1" stop-color="#00C2FF"/>
+      <stop offset="0" stop-color="#2E8B3A"/><stop offset="1" stop-color="#B5D936"/>
     </linearGradient>
   </defs>
 </svg>
 
 <section class="lado-marca" aria-hidden="true">
-  <span class="logo-epc"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg>IEW</span><span class="logo-epc-sub">Engineering Intelligence</span></span>
+  <span class="logo-epc"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg><span class="logo-epc-iew">IEW</span></span><span class="logo-epc-sub">Engineering Intelligence</span></span>
 
   <div class="lm-chamada">
     <h1>Do dado à decisão.<br>Do projeto à entrega.</h1>
@@ -178,7 +178,7 @@
 
   <div class="painel-interno surgir">
     <div class="marca-movel">
-      <span class="logo-epc logo-epc-claro" role="img" aria-label="EPCVIEW"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg>IEW</span><span class="logo-epc-sub">Engineering Intelligence</span></span>
+      <span class="logo-epc logo-epc-claro" role="img" aria-label="EPCVIEW"><span class="logo-epc-nome">EPC<svg class="logo-epc-v" viewBox="0 0 78 72"><path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/></svg><span class="logo-epc-iew">IEW</span></span><span class="logo-epc-sub">Engineering Intelligence</span></span>
     </div>
 
     <p class="sobretitulo">Plataforma</p>
@@ -245,7 +245,7 @@ fetch('/api/config').then(r => r.json()).then(cfg => {
   const ctx = canvas.getContext('2d');
   const RAIO_LIGACAO = 130;
   const RAIO_MOUSE = 150;
-  const RGB_LINHA = '0, 194, 255';    // --cyan, em rgb
+  const RGB_LINHA = '131, 184, 62';    // --cyan, em rgb
 
   let largura = 0, altura = 0, dpr = 1;
   let particulas = [];
@@ -300,7 +300,7 @@ fetch('/api/config').then(r => r.json()).then(cfg => {
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(192, 226, 240, .55)';
+      ctx.fillStyle = 'rgba(205, 230, 190, .55)';
       ctx.fill();
     }
 

@@ -6,7 +6,7 @@ nomes — elas aparecem sozinhas, sem mexer no código.
 
 | Arquivo | Onde aparece | Tamanho sugerido |
 |---|---|---|
-| `hero.jpg` | Fundo do topo do site (refinaria à noite) e lado esquerdo do login | 2400 × 1200 |
+| `hero.png` | Fundo do topo do site (refinaria à noite) e lado esquerdo do login | 2400 × 1200 |
 | `plataforma.jpg` | Fundo atrás do notebook na seção Plataforma (escritório) | 1600 × 1100 |
 | `solucao-project-controls.jpg` | Card Project Controls | 800 × 600 |
 | `solucao-engenharia.jpg` | Card Engenharia | 800 × 600 |
@@ -26,3 +26,10 @@ essas imagens com cache de 1 dia.
 
 O botão "Assista ao vídeo" toca `site/video/apresentacao.mp4`. Sem o arquivo,
 o modal mostra "disponível em breve" e um atalho para o WhatsApp (ver site/contato.js).
+
+## Origem das fotos em uso
+
+- `hero.png` — "A large oil refinery lit up at night", Kamekichi Photos, Unsplash
+  (https://unsplash.com/photos/a-large-oil-refinery-lit-up-at-night-L-RSVfhluGw),
+  Licença Unsplash (uso comercial livre, sem atribuição obrigatória). Recortada em
+  2:1 (2000 × 1000) e com tratamento de cor puxando os azuis para o verde da marca.

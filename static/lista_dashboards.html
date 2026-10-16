@@ -254,7 +254,7 @@
           <span>Escolher outra cor</span>
         </label>
         <input class="campo cg-hex" id="cg-cor-hex" type="text" maxlength="7" spellcheck="false"
-               placeholder="#0A6CF0" aria-label="Código da cor (#RRGGBB)">
+               placeholder="#245C30" aria-label="Código da cor (#RRGGBB)">
       </div>
 
       <div class="cg-previa">
@@ -534,7 +534,7 @@
   let paletaCategorias = [];
   let categoriasCadastradas = [];
   let editandoCategoria = null;     // null = criando uma nova
-  let corEscolhida = '#0a6cf0';
+  let corEscolhida = '#245C30';
   const $cg = id => document.getElementById(id);
 
   async function chamarCategorias(metodo, caminho, corpo) {
@@ -674,7 +674,7 @@
     desenharPaleta();
     // Nova: sugere a primeira cor da paleta que ainda não está em uso.
     const usadas = new Set(categoriasCadastradas.map(c => c.cor.toLowerCase()));
-    const sugestao = paletaCategorias.find(p => !usadas.has(p)) || paletaCategorias[0] || '#0a6cf0';
+    const sugestao = paletaCategorias.find(p => !usadas.has(p)) || paletaCategorias[0] || '#245C30';
     definirCor(categoria ? (corValida(categoria.cor) || sugestao) : sugestao);
     mostrarVista('editar');
     setTimeout(() => $cg('cg-nome').focus(), 30);

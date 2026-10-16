@@ -42,7 +42,7 @@
     const V_MARCA =
         '<svg class="logo-epc-v" viewBox="0 0 78 72" aria-hidden="true">' +
           '<defs><linearGradient id="epc-v-grad" x1="0" y1="0" x2="1" y2="1">' +
-            '<stop offset="0" stop-color="#0A6CF0"/><stop offset="1" stop-color="#00C2FF"/>' +
+            '<stop offset="0" stop-color="#2E8B3A"/><stop offset="1" stop-color="#B5D936"/>' +
           '</linearGradient></defs>' +
           '<path d="M0 0h22l17 45L56 0h22L49 72H29Z" fill="url(#epc-v-grad)"/>' +
         '</svg>';
@@ -52,7 +52,7 @@
         const o = opcoes || {};
         return '<span class="logo-epc' + (o.claro ? ' logo-epc-claro' : '') + (o.classe ? ' ' + o.classe : '') + '" ' +
             'role="img" aria-label="EPCVIEW">' +
-            '<span class="logo-epc-nome">EPC' + V_MARCA + 'IEW</span>' +
+            '<span class="logo-epc-nome">EPC' + V_MARCA + '<span class="logo-epc-iew">IEW</span></span>' +
             (o.semSub ? '' : '<span class="logo-epc-sub">Engineering Intelligence</span>') +
             '</span>';
     }
